@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <title>Wekker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #6DD5FA, #2980B9);
+      color: white;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+    .container {
+      margin-top: 20px;
+      background: rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 12px;
+      width: 95%;
+      max-width: 450px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+      text-align: center;
+    }
+    h2, h3 { margin-top: 0; }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    input, select {
+      background: rgba(255,255,255,0.9);
+      color: #333;
+    }
+    button {
+      background: #fff;
+      color: #2980B9;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover { background: #f1f1f1; }
+    ul { list-style: none; padding: 0; }
+    li {
+      background: rgba(255,255,255,0.2);
+      margin: 5px 0;
+      padding: 8px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .top-line {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      align-items: center;
+    }
+    .remove {
+      background: crimson;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+    .countdown {
+      font-size: 0.9rem;
+      margin-top: 4px;
+      opacity: 0.9;
+    }
+    .stop-btn {
+      margin-top: 6px;
+      background: orange;
+      color: white;
+      font-weight: bold;
+    }
+    .days {
+      display: flex;
+      justify-content: space-between;
+      margin: 6px 0;
+    }
+    .days label {
+      flex:1;
+      text-align:center;
+      font-size:0.8rem;
+    }
+    #clock {
+      font-size: 2rem;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="clock"></div>
+    <h2>Alarm instellen</h2>
+    <input type="time" id="time">
+    <div class="days">
+      <label><input type="checkbox" value="1">Ma</label>
+      <label><input type="checkbox" value="2">Di</label>
+      <label><input type="checkbox" value="3">Wo</label>
+      <label><input type="checkbox" value="4">Do</label>
+      <label><input type="checkbox" value="5">Vr</label>
+      <label><input type="checkbox" value="6">Za</label>
+      <label><input type="checkbox" value="0">Zo</label>
+    </div>
+    <input type="file" id="sound" accept="audio/*">
+    <input type="range" id="volume" min="0" max="1" step="0.1" value="1">
+    <button id="test">Test geluid</button>
+    <button id="add">Voeg alarm toe</button>
+    <button onclick="window.location.href='index.html'">Terug naar Start</button>
+
+    <h3>Ingestelde alarmen</h3>
+    <ul id="alarms"></ul>
+  </div>
+
+  <script>
+    const alarms = JSON.parse(localStorage.getItem("alarms")||"[]");
+    const list = document.getElementById('alarms');
+    let currentAudio = null;
+
+    function updateClock(){
+      const now = new Date();
+      document.getElementById('clock').textContent =
+        now.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    }
+    setInterval(updateClock,1000); updateClock();
+
+    document.getElementById('add').onclick = () => {
+      const time = document.getElementById('time').value;
+      const file = document.getElementById('sound').files[0];
+      const volume = parseFloat(document.getElementById('volume').value);
+      const days = Array.from(document.querySelectorAll('.days input:checked')).map(cb=>parseInt(cb.value));
+      if (!time || !file) return alert("Kies tijd en geluid");
+
+      const url = URL.createObjectURL(file);
+      const alarm = {time, url, volume, days};
+      alarms.push(alarm);
+      saveAndRender();
+    };
+
+    document.getElementById('test').onclick = () => {
+      const file = document.getElementById('sound').files[0];
+      if (!file) return alert("Kies eerst een bestand");
+      const url = URL.createObjectURL(file);
+      const audio = new Audio(url);
+      audio.volume = parseFloat(document.getElementById('volume').value);
+      audio.play();
+    };
+
+    function saveAndRender(){
+      localStorage.setItem("alarms", JSON.stringify(alarms));
+      render();
+    }
+
+    function render() {
+      list.innerHTML = '';
+      alarms.forEach((a,i)=>{
+        const li = document.createElement('li');
+        const top = document.createElement('div');
+        top.className = "top-line";
+        top.innerHTML = `<span>${a.time} (${a.days.length? a.days.join(','):"Elke dag"})</span>`;
+        const btn = document.createElement('button');
+        btn.textContent = "X";
+        btn.className = "remove";
+        btn.onclick = () => { alarms.splice(i,1); saveAndRender(); };
+        top.appendChild(btn);
+        li.appendChild(top);
+
+        const cd = document.createElement('div');
+        cd.className = "countdown";
+        li.appendChild(cd);
+        a.cdElement = cd;
+
+        list.appendChild(li);
+      });
+    }
+    render();
+
+    function updateCountdowns() {
+      const now = new Date();
+      alarms.forEach(a=>{
+        const [h,m] = a.time.split(':').map(Number);
+        let target = new Date();
+        target.setHours(h,m,0,0);
+        if (target <= now) target.setDate(target.getDate()+1);
+        const diff = target - now;
+        const hrs = Math.floor(diff/3600000);
+        const mins = Math.floor((diff%3600000)/60000);
+        const secs = Math.floor((diff%60000)/1000);
+        a.cdElement.textContent = `Nog ${hrs}u ${mins}m ${secs}s`;
+      });
+    }
+    setInterval(updateCountdowns,1000);
+
+    setInterval(()=>{
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2,'0');
+      const mm = String(now.getMinutes()).padStart(2,'0');
+      const current = `${hh}:${mm}`;
+      const today = now.getDay(); // 0=zo ... 6=za
+      alarms.slice().forEach(a=>{
+        if (a.time === current) {
+          if (a.days.length===0 || a.days.includes(today)) {
+            currentAudio = new Audio(a.url);
+            currentAudio.volume = a.volume;
+            currentAudio.play();
+
+            const stopBtn = document.createElement('button');
+            stopBtn.textContent = "Stop";
+            stopBtn.className = "stop-btn";
+            stopBtn.onclick = () => {
+              currentAudio.pause();
+              currentAudio.currentTime = 0;
+              stopBtn.remove();
+            };
+            a.cdElement.parentElement.appendChild(stopBtn);
+          }
+        }
+      });
+    }, 30*1000);
+  </script>
+</body>
+</html>
