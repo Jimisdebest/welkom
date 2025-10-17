@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <title>Mini Muziekstudio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .controls {
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    input[type="file"], button {
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      background: white;
+      color: #2a5298;
+    }
+    .track {
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .track button {
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      background: white;
+      color: #2a5298;
+    }
+    .track input[type="range"] {
+      width: 100%;
+    }
+    .track audio {
+      width: 100%;
+    }
+    .back {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎶 Mini Muziekstudio</h1>
+  <div class="controls">
+    <input type="file" id="upload" accept="audio/*" multiple>
+    <button onclick="startRecording()">🎙️ Start opname</button>
+    <button onclick="stopRecording()" id="stopBtn" disabled>⏹️ Stop opname</button>
+    <button onclick="window.location.href='index.html'">🏠 Terug naar Start</button>
+  </div>
+  <div id="tracks"></div>
+
+  <script>
+    const upload = document.getElementById('upload');
+    const tracks = document.getElementById('tracks');
+    let mediaRecorder;
+    let recordedChunks = [];
+
+    upload.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files);
+      files.forEach(file => addTrack(file));
+    });
+
+    function addTrack(file) {
+      const url = URL.createObjectURL(file);
+      const container = document.createElement('div');
+      container.className = 'track';
+
+      const audio = document.createElement('audio');
+      audio.controls = true;
+      audio.src = url;
+
+      const volume = document.createElement('input');
+      volume.type = 'range';
+      volume.min = 0;
+      volume.max = 1;
+      volume.step = 0.01;
+      volume.value = 1;
+      volume.oninput = () => audio.volume = volume.value;
+
+      const download = document.createElement('button');
+      download.textContent = '📥 Download';
+      download.onclick = () => {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name;
+        a.click();
+      };
+
+      const remove = document.createElement('button');
+      remove.textContent = '🗑️ Verwijder';
+      remove.onclick = () => container.remove();
+
+      container.appendChild(document.createTextNode(file.name));
+      container.appendChild(audio);
+      container.appendChild(volume);
+      container.appendChild(download);
+      container.appendChild(remove);
+      tracks.appendChild(container);
+    }
+
+    function startRecording() {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          recordedChunks = [];
+          mediaRecorder = new MediaRecorder(stream);
+          mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) recordedChunks.push(e.data);
+          };
+          mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+            const file = new File([blob], `opname-${Date.now()}.webm`, { type: 'audio/webm' });
+            addTrack(file);
+          };
+          mediaRecorder.start();
+          document.getElementById('stopBtn').disabled = false;
+        })
+        .catch(err => alert("Microfoon niet beschikbaar: " + err));
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+        document.getElementById('stopBtn').disabled = true;
+      }
+    }
+  </script>
+</body>
+</html>
