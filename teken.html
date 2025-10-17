@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <title>Tekenbord</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #2c3e50;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    canvas {
+      image-rendering: pixelated;
+      border: 2px solid white;
+      background: #ecf0f1;
+      cursor: crosshair;
+    }
+    .tools {
+      margin: 10px 0;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    button, input[type="color"] {
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #34495e;
+      color: white;
+    }
+    input[type="file"] {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pixel Art Tekenbord</h1>
+  <canvas id="canvas" width="320" height="320"></canvas>
+
+  <div class="tools">
+    <input type="color" id="color" value="#000000">
+    <button onclick="tool='pen'">🖌️ Pen</button>
+    <button onclick="tool='eraser'">🧽 Gum</button>
+    <button onclick="clearCanvas()">🗑️ Verwijder</button>
+    <button onclick="downloadCanvas()">📥 Download</button>
+    <input type="file" accept="image/*" onchange="uploadImage(event)">
+    <button onclick="window.location.href='index.html'">Terug naar Start</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const size = 16; // pixelgrootte
+    let tool = 'pen';
+    let color = document.getElementById('color').value;
+
+    // Raster tekenen
+    function drawGrid() {
+      ctx.strokeStyle = '#bdc3c7';
+      for (let x = 0; x < canvas.width; x += size) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += size) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+    }
+
+    drawGrid();
+
+    canvas.addEventListener('mousedown', drawPixel);
+    canvas.addEventListener('mousemove', e => {
+      if (e.buttons === 1) drawPixel(e);
+    });
+
+    function drawPixel(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor((e.clientX - rect.left) / size) * size;
+      const y = Math.floor((e.clientY - rect.top) / size) * size;
+      ctx.fillStyle = tool === 'pen' ? color : '#ecf0f1';
+      ctx.fillRect(x, y, size, size);
+      drawGrid();
+    }
+
+    document.getElementById('color').addEventListener('input', e => {
+      color = e.target.value;
+    });
+
+    function clearCanvas() {
+      ctx.fillStyle = '#ecf0f1';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      drawGrid();
+    }
+
+    function downloadCanvas() {
+      const link = document.createElement('a');
+      link.download = 'pixel-art.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+
+    function uploadImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        drawGrid();
+      };
+      img.src = URL.createObjectURL(file);
+    }
+  </script>
+</body>
+</html>
