@@ -56,6 +56,7 @@
     <button onclick="tool='pen'">🖌️ Pen</button>
     <button onclick="tool='eraser'">🧽 Gum</button>
     <button onclick="clearCanvas()">🗑️ Verwijder</button>
+    <button onclick="toggleGrid()">🔲 Raster aan/uit</button>
     <button onclick="downloadCanvas()">📥 Download</button>
     <input type="file" accept="image/*" onchange="uploadImage(event)">
     <button onclick="window.location.href='index.html'">Terug naar Start</button>
@@ -64,12 +65,15 @@
   <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const size = 16; // pixelgrootte
+    ctx.imageSmoothingEnabled = false;
+
+    const size = 8;
     let tool = 'pen';
     let color = document.getElementById('color').value;
+    let showGrid = true;
 
-    // Raster tekenen
-    function drawGrid() {
+    function drawGridOverlay() {
+      if (!showGrid) return;
       ctx.strokeStyle = '#bdc3c7';
       for (let x = 0; x < canvas.width; x += size) {
         ctx.beginPath();
@@ -85,21 +89,25 @@
       }
     }
 
-    drawGrid();
-
-    canvas.addEventListener('mousedown', drawPixel);
-    canvas.addEventListener('mousemove', e => {
-      if (e.buttons === 1) drawPixel(e);
-    });
-
     function drawPixel(e) {
       const rect = canvas.getBoundingClientRect();
       const x = Math.floor((e.clientX - rect.left) / size) * size;
       const y = Math.floor((e.clientY - rect.top) / size) * size;
       ctx.fillStyle = tool === 'pen' ? color : '#ecf0f1';
       ctx.fillRect(x, y, size, size);
-      drawGrid();
+      redrawCanvas();
     }
+
+    function redrawCanvas() {
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      ctx.putImageData(imageData, 0, 0);
+      drawGridOverlay();
+    }
+
+    canvas.addEventListener('mousedown', drawPixel);
+    canvas.addEventListener('mousemove', e => {
+      if (e.buttons === 1) drawPixel(e);
+    });
 
     document.getElementById('color').addEventListener('input', e => {
       color = e.target.value;
@@ -108,13 +116,25 @@
     function clearCanvas() {
       ctx.fillStyle = '#ecf0f1';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      drawGrid();
+      redrawCanvas();
+    }
+
+    function toggleGrid() {
+      showGrid = !showGrid;
+      redrawCanvas();
     }
 
     function downloadCanvas() {
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = canvas.width;
+      exportCanvas.height = canvas.height;
+      const exportCtx = exportCanvas.getContext('2d');
+      exportCtx.imageSmoothingEnabled = false;
+      exportCtx.drawImage(canvas, 0, 0);
+
       const link = document.createElement('a');
       link.download = 'pixel-art.png';
-      link.href = canvas.toDataURL();
+      link.href = exportCanvas.toDataURL();
       link.click();
     }
 
@@ -124,10 +144,12 @@
       const img = new Image();
       img.onload = () => {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        drawGrid();
+        redrawCanvas();
       };
       img.src = URL.createObjectURL(file);
     }
+
+    clearCanvas();
   </script>
 </body>
 </html>
