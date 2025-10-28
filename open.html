@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <title>Bestand opener</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background-color: #f0f0f0;
+      padding: 50px;
+    }
+    #preview {
+      max-width: 100%;
+      max-height: 100%;
+      display: none;
+    }
+    video, img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <h1>📁 Kies een bestand</h1>
+  <input type="file" id="fileInput" accept="image/*,video/*">
+  <br><br>
+  <button onclick="showFullscreen()">Fullscreen</button>
+  <div id="preview"></div>
+
+  <script>
+    let selectedFile;
+
+    document.getElementById('fileInput').addEventListener('change', function(event) {
+      selectedFile = event.target.files[0];
+      const preview = document.getElementById('preview');
+      preview.innerHTML = '';
+
+      if (selectedFile.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(selectedFile);
+        preview.appendChild(img);
+      } else if (selectedFile.type.startsWith('video/')) {
+        const video = document.createElement('video');
+        video.src = URL.createObjectURL(selectedFile);
+        video.controls = true;
+        preview.appendChild(video);
+      }
+
+      preview.style.display = 'block';
+    });
+
+    function showFullscreen() {
+      const preview = document.getElementById('preview');
+      if (preview.requestFullscreen) {
+        preview.requestFullscreen();
+      } else if (preview.webkitRequestFullscreen) {
+        preview.webkitRequestFullscreen();
+      } else if (preview.msRequestFullscreen) {
+        preview.msRequestFullscreen();
+      }
+    }
+  </script>
+</body>
+</html>
