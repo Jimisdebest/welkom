@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Timer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .timer-container {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            text-align: center;
+            width: 100%;
+            max-width: 550px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .timer-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            z-index: -1;
+        }
+        
+        h1 {
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.8rem;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+            letter-spacing: 1px;
+            animation: titleGlow 3s ease-in-out infinite alternate;
+        }
+        
+        @keyframes titleGlow {
+            from { text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3); }
+            to { text-shadow: 2px 2px 15px rgba(255, 255, 255, 0.5); }
+        }
+        
+        .timer-display-container {
+            position: relative;
+            margin-bottom: 40px;
+        }
+        
+        .progress-ring {
+            transform: rotate(-90deg);
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+        }
+        
+        .progress-ring-background {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.1);
+            stroke-width: 8;
+        }
+        
+        .progress-ring-circle {
+            fill: none;
+            stroke: #4CC9F0;
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 879.2; /* 2 * π * 140 */
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear;
+            filter: drop-shadow(0 0 8px rgba(76, 201, 240, 0.7));
+        }
+        
+        .timer-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4.2rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px 30px;
+            min-width: 280px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .timer-running .timer-display {
+            animation: pulse 1.5s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from { transform: translate(-50%, -50%) scale(1); }
+            to { transform: translate(-50%, -50%) scale(1.05); }
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        button {
+            padding: 14px 28px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            font-weight: 600;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        button:hover::before {
+            left: 100%;
+        }
+        
+        .start-btn {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            color: white;
+        }
+        
+        .stop-btn {
+            background: linear-gradient(135deg, #f44336, #c62828);
+            color: white;
+        }
+        
+        .reset-btn {
+            background: linear-gradient(135deg, #ff9800, #ef6c00);
+            color: white;
+        }
+        
+        button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(2px);
+        }
+        
+        .time-adjustment {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            gap: 15px;
+        }
+        
+        .time-unit {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .time-unit:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .time-label {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            color: white;
+            font-weight: 600;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
+        .adjust-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .adjust-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            padding: 0;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .adjust-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+        
+        .time-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin: 10px 0;
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+            min-width: 40px;
+        }
+        
+        .alarm-message {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 235, 59, 0.9);
+            border-radius: 15px;
+            font-weight: bold;
+            color: #333;
+            display: none;
+            animation: alarmPulse 0.8s infinite alternate, shake 0.5s ease infinite;
+            box-shadow: 0 0 20px rgba(255, 235, 59, 0.7);
+        }
+        
+        @keyframes alarmPulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .floating-elements {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            z-index: -1;
+        }
+        
+        .floating-element {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-1000%) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .timer-container {
+                padding: 30px 20px;
+            }
+            
+            .timer-display {
+                font-size: 3.2rem;
+                min-width: 240px;
+            }
+            
+            .progress-ring {
+                width: 250px;
+                height: 250px;
+            }
+            
+            .controls {
+                flex-wrap: wrap;
+            }
+            
+            button {
+                flex: 1;
+                min-width: 140px;
+                justify-content: center;
+            }
+            
+            .time-adjustment {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+        
+        .time-low {
+            color: #ff5252 !important;
+            animation: timeLowPulse 0.8s infinite alternate !important;
+        }
+        
+        @keyframes timeLowPulse {
+            from { text-shadow: 0 0 5px rgba(255, 82, 82, 0.7); }
+            to { text-shadow: 0 0 15px rgba(255, 82, 82, 1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-elements" id="floatingElements"></div>
+    
+    <div class="timer-container" id="timerContainer">
+        <h1><i class="fas fa-clock"></i> Premium Timer</h1>
+        
+        <div class="timer-display-container">
+            <svg class="progress-ring" width="300" height="300">
+                <circle class="progress-ring-background" cx="150" cy="150" r="140"></circle>
+                <circle class="progress-ring-circle" cx="150" cy="150" r="140"></circle>
+            </svg>
+            <div class="timer-display" id="timer">01:00</div>
+        </div>
+        
+        <div class="controls">
+            <button class="start-btn" id="startBtn">
+                <i class="fas fa-play"></i> Start
+            </button>
+            <button class="stop-btn" id="stopBtn">
+                <i class="fas fa-pause"></i> Stop
+            </button>
+            <button class="reset-btn" id="resetBtn">
+                <i class="fas fa-redo"></i> Reset
+            </button>
+        </div>
+        
+        <div class="time-adjustment">
+            <div class="time-unit">
+                <div class="time-label">Uren</div>
+                <div class="adjust-buttons">
+                    <button class="adjust-btn" id="decreaseHours">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <button class="adjust-btn" id="increaseHours">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="time-value" id="hoursValue">0</div>
+            </div>
+            
+            <div class="time-unit">
+                <div class="time-label">Minuten</div>
+                <div class="adjust-buttons">
+                    <button class="adjust-btn" id="decreaseMinutes">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <button class="adjust-btn" id="increaseMinutes">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="time-value" id="minutesValue">1</div>
+            </div>
+            
+            <div class="time-unit">
+                <div class="time-label">Seconden</div>
+                <div class="adjust-buttons">
+                    <button class="adjust-btn" id="decreaseSeconds">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <button class="adjust-btn" id="increaseSeconds">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="time-value" id="secondsValue">0</div>
+            </div>
+        </div>
+        
+        <div class="alarm-message" id="alarmMessage">
+            <i class="fas fa-bell"></i> Tijd is om!
+        </div>
+    </div>
+
+    <script>
+        // Elementen ophalen
+        const timerDisplay = document.getElementById('timer');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const alarmMessage = document.getElementById('alarmMessage');
+        const timerContainer = document.getElementById('timerContainer');
+        const progressCircle = document.querySelector('.progress-ring-circle');
+        
+        // Tijd aanpassingsknoppen
+        const decreaseHours = document.getElementById('decreaseHours');
+        const increaseHours = document.getElementById('increaseHours');
+        const decreaseMinutes = document.getElementById('decreaseMinutes');
+        const increaseMinutes = document.getElementById('increaseMinutes');
+        const decreaseSeconds = document.getElementById('decreaseSeconds');
+        const increaseSeconds = document.getElementById('increaseSeconds');
+        
+        // Tijdwaarden
+        const hoursValue = document.getElementById('hoursValue');
+        const minutesValue = document.getElementById('minutesValue');
+        const secondsValue = document.getElementById('secondsValue');
+        
+        // Variabelen voor timer
+        let totalSeconds = 60; // Standaard 60 seconden
+        let timerInterval;
+        let isRunning = false;
+        const circumference = 2 * Math.PI * 140;
+        
+        // Progress circle initialiseren
+        progressCircle.style.strokeDasharray = circumference;
+        progressCircle.style.strokeDashoffset = 0;
+        
+        // Floating elements toevoegen
+        const floatingElements = document.getElementById('floatingElements');
+        for (let i = 0; i < 15; i++) {
+            const element = document.createElement('div');
+            element.classList.add('floating-element');
+            const size = Math.random() * 30 + 10;
+            element.style.width = `${size}px`;
+            element.style.height = `${size}px`;
+            element.style.left = `${Math.random() * 100}%`;
+            element.style.animationDelay = `${Math.random() * 15}s`;
+            element.style.animationDuration = `${15 + Math.random() * 10}s`;
+            floatingElements.appendChild(element);
+        }
+        
+        // Timer bijwerken
+        function updateTimerDisplay() {
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            
+            timerDisplay.textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Waarden bijwerken voor aanpassingsknoppen
+            hoursValue.textContent = hours;
+            minutesValue.textContent = minutes;
+            secondsValue.textContent = seconds;
+            
+            // Progress circle bijwerken
+            updateProgressCircle();
+            
+            // Kleur veranderen bij lage tijd
+            if (totalSeconds <= 10 && totalSeconds > 0) {
+                timerDisplay.classList.add('time-low');
+                progressCircle.style.stroke = '#ff5252';
+            } else {
+                timerDisplay.classList.remove('time-low');
+                progressCircle.style.stroke = '#4CC9F0';
+            }
+        }
+        
+        // Progress circle bijwerken
+        function updateProgressCircle() {
+            const initialTotalSeconds = 
+                parseInt(hoursValue.textContent) * 3600 + 
+                parseInt(minutesValue.textContent) * 60 + 
+                parseInt(secondsValue.textContent);
+            
+            const progress = circumference - (totalSeconds / initialTotalSeconds) * circumference;
+            progressCircle.style.strokeDashoffset = progress;
+        }
+        
+        // Timer starten
+        function startTimer() {
+            if (isRunning || totalSeconds <= 0) return;
+            
+            isRunning = true;
+            timerContainer.classList.add('timer-running');
+            timerInterval = setInterval(() => {
+                totalSeconds--;
+                updateTimerDisplay();
+                
+                if (totalSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    isRunning = false;
+                    timerContainer.classList.remove('timer-running');
+                    playAlarm();
+                }
+            }, 1000);
+        }
+        
+        // Timer stoppen
+        function stopTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            timerContainer.classList.remove('timer-running');
+        }
+        
+        // Timer resetten
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            timerContainer.classList.remove('timer-running');
+            totalSeconds = 60; // Terug naar standaard 60 seconden
+            updateTimerDisplay();
+            alarmMessage.style.display = 'none';
+            progressCircle.style.stroke = '#4CC9F0';
+            timerDisplay.classList.remove('time-low');
+        }
+        
+        // Alarm afspelen
+        function playAlarm() {
+            alarmMessage.style.display = 'block';
+            
+            // Zacht geluid maken met Web Audio API
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 800;
+                gainNode.gain.value = 0.1; // Zacht volume
+                
+                oscillator.start();
+                setTimeout(() => {
+                    oscillator.stop();
+                }, 1000); // 1 seconde geluid
+            } catch (e) {
+                console.log("Web Audio API wordt niet ondersteund in deze browser");
+            }
+        }
+        
+        // Tijd aanpassen
+        function adjustTime(unit, amount) {
+            if (isRunning) return;
+            
+            if (unit === 'hours') {
+                const newHours = parseInt(hoursValue.textContent) + amount;
+                if (newHours >= 0) {
+                    hoursValue.textContent = newHours;
+                }
+            } else if (unit === 'minutes') {
+                const newMinutes = parseInt(minutesValue.textContent) + amount;
+                if (newMinutes >= 0) {
+                    minutesValue.textContent = newMinutes;
+                }
+            } else if (unit === 'seconds') {
+                const newSeconds = parseInt(secondsValue.textContent) + amount;
+                if (newSeconds >= 0) {
+                    secondsValue.textContent = newSeconds;
+                }
+            }
+            
+            // Totale seconden berekenen
+            totalSeconds = 
+                parseInt(hoursValue.textContent) * 3600 + 
+                parseInt(minutesValue.textContent) * 60 + 
+                parseInt(secondsValue.textContent);
+            
+            updateTimerDisplay();
+        }
+        
+        // Event listeners toevoegen
+        startBtn.addEventListener('click', startTimer);
+        stopBtn.addEventListener('click', stopTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        
+        decreaseHours.addEventListener('click', () => adjustTime('hours', -1));
+        increaseHours.addEventListener('click', () => adjustTime('hours', 1));
+        decreaseMinutes.addEventListener('click', () => adjustTime('minutes', -1));
+        increaseMinutes.addEventListener('click', () => adjustTime('minutes', 1));
+        decreaseSeconds.addEventListener('click', () => adjustTime('seconds', -1));
+        increaseSeconds.addEventListener('click', () => adjustTime('seconds', 1));
+        
+        // Timer initialiseren
+        updateTimerDisplay();
+    </script>
+</body>
+</html>
