@@ -12,7 +12,8 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
+      padding: 20px;
     }
     .menu {
       background: white;
@@ -20,6 +21,8 @@
       border-radius: 12px;
       box-shadow: 0 8px 16px rgba(0,0,0,0.2);
       text-align: center;
+      max-width: 500px;
+      width: 100%;
     }
     h1 {
       margin-bottom: 20px;
@@ -34,21 +37,25 @@
       text-decoration: none;
       border-radius: 8px;
       font-weight: bold;
+      transition: background 0.3s, transform 0.2s;
     }
     a:hover {
       background: #3498DB;
+      transform: translateY(-2px);
     }
   </style>
 </head>
 <body>
   <div class="menu">
     <h1>Welkom op de FunSite</h1>
+    <a href="klikker.html">🍪 Cookie Klikker</a>
+    <a href="wekker2.html">⏱️ Timer</a>
     <a href="wekker.html">⏰ Wekker</a>
+    <a href="nexcube.html">🎲 Nexcube Timer</a>
     <a href="teken.html">🎨 Pixel Art</a>
     <a href="studio.html">🎧 Muziekstudio</a>
     <a href="game.html">🎮 Platformer</a>
     <a href="open.html">📂 Bestand opener</a>
-    <a href="klikker.html">Cookie Klikker</a>
     <a href="https://jimisdebest.github.io/radio/" target="_blank">📻 AI Songs Radio</a>
   </div>
 </body>
