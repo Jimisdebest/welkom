@@ -159,6 +159,15 @@
       background-color: #388e3c;
     }
     
+    #resetButton {
+      background-color: #f44336;
+      margin-top: 10px;
+    }
+    
+    #resetButton:hover {
+      background-color: #d32f2f;
+    }
+    
     .stats {
       font-size: 14px;
       margin-top: 5px;
@@ -174,6 +183,10 @@
     
     .purchased {
       animation: purchaseAnimation 0.5s;
+    }
+    
+    .control-buttons {
+      margin-top: 20px;
     }
   </style>
 </head>
@@ -218,21 +231,27 @@
     </div>
   </div>
   
-  <button id="autoBuyToggle">Automatisch Kopen: UIT</button>
+  <div class="control-buttons">
+    <button id="autoBuyToggle">Automatisch Kopen: UIT</button>
+    <button id="resetButton">Reset Spel</button>
+  </div>
 
   <script>
-    let cookies = 0;
-    let clickPower = 1;
-    let autoClickers = 0;
-    let deliveries = 0;
-    let factories = 0;
-    let autoBuyEnabled = false;
+    // Game state
+    let gameState = {
+      cookies: 0,
+      clickPower: 1,
+      autoClickers: 0,
+      deliveries: 0,
+      factories: 0,
+      autoBuyEnabled: false,
+      clickUpgradeCost: 25,
+      autoClickerCost: 50,
+      deliveryCost: 75,
+      factoryCost: 100
+    };
 
-    let clickUpgradeCost = 25;
-    let autoClickerCost = 50;
-    let deliveryCost = 75;
-    let factoryCost = 100;
-
+    // DOM elements
     const scoreDisplay = document.getElementById("score");
     const cookie = document.getElementById("cookie");
     const buyClickUpgrade = document.getElementById("buyClickUpgrade");
@@ -240,6 +259,7 @@
     const buyDelivery = document.getElementById("buyDelivery");
     const buyFactory = document.getElementById("buyFactory");
     const autoBuyToggle = document.getElementById("autoBuyToggle");
+    const resetButton = document.getElementById("resetButton");
 
     const clickPowerDisplay = document.getElementById("clickPower");
     const autoClickerDisplay = document.getElementById("autoClickers");
@@ -252,22 +272,59 @@
     const deliveryCostDisplay = document.getElementById("deliveryCostDisplay");
     const factoryCostDisplay = document.getElementById("factoryCostDisplay");
 
+    // Save game state to localStorage
+    function saveGame() {
+      localStorage.setItem('cookieClickerSave', JSON.stringify(gameState));
+    }
+
+    // Load game state from localStorage
+    function loadGame() {
+      const savedGame = localStorage.getItem('cookieClickerSave');
+      if (savedGame) {
+        gameState = JSON.parse(savedGame);
+        console.log('Spel geladen:', gameState);
+      }
+    }
+
+    // Reset game state
+    function resetGame() {
+      if (confirm('Weet je zeker dat je het spel wilt resetten? Alle voortgang gaat verloren!')) {
+        gameState = {
+          cookies: 0,
+          clickPower: 1,
+          autoClickers: 0,
+          deliveries: 0,
+          factories: 0,
+          autoBuyEnabled: false,
+          clickUpgradeCost: 25,
+          autoClickerCost: 50,
+          deliveryCost: 75,
+          factoryCost: 100
+        };
+        saveGame();
+        updateDisplay();
+      }
+    }
+
     function updateDisplay() {
-      scoreDisplay.textContent = `Cookies: ${cookies}`;
-      clickPowerDisplay.textContent = `Koekjes per klik: ${clickPower}`;
-      autoClickerDisplay.textContent = `Auto-Clickers: ${autoClickers}`;
-      deliveryDisplay.textContent = `Bezorgers: ${deliveries}`;
-      factoryDisplay.textContent = `Fabrieken: ${factories}`;
+      scoreDisplay.textContent = `Cookies: ${gameState.cookies}`;
+      clickPowerDisplay.textContent = `Koekjes per klik: ${gameState.clickPower}`;
+      autoClickerDisplay.textContent = `Auto-Clickers: ${gameState.autoClickers}`;
+      deliveryDisplay.textContent = `Bezorgers: ${gameState.deliveries}`;
+      factoryDisplay.textContent = `Fabrieken: ${gameState.factories}`;
 
-      clickUpgradeCostDisplay.textContent = clickUpgradeCost;
-      autoClickerCostDisplay.textContent = autoClickerCost;
-      deliveryCostDisplay.textContent = deliveryCost;
-      factoryCostDisplay.textContent = factoryCost;
+      clickUpgradeCostDisplay.textContent = gameState.clickUpgradeCost;
+      autoClickerCostDisplay.textContent = gameState.autoClickerCost;
+      deliveryCostDisplay.textContent = gameState.deliveryCost;
+      factoryCostDisplay.textContent = gameState.factoryCost;
 
-      buyClickUpgrade.disabled = cookies < clickUpgradeCost;
-      buyAutoClicker.disabled = cookies < autoClickerCost;
-      buyDelivery.disabled = cookies < deliveryCost;
-      buyFactory.disabled = cookies < factoryCost;
+      buyClickUpgrade.disabled = gameState.cookies < gameState.clickUpgradeCost;
+      buyAutoClicker.disabled = gameState.cookies < gameState.autoClickerCost;
+      buyDelivery.disabled = gameState.cookies < gameState.deliveryCost;
+      buyFactory.disabled = gameState.cookies < gameState.factoryCost;
+
+      autoBuyToggle.textContent = `Automatisch Kopen: ${gameState.autoBuyEnabled ? "AAN" : "UIT"}`;
+      autoBuyToggle.style.backgroundColor = gameState.autoBuyEnabled ? "#f44336" : "#4caf50";
     }
 
     function createFloatingCookie() {
@@ -290,8 +347,9 @@
       }, 1500);
     }
 
+    // Event listeners
     cookie.addEventListener("click", () => {
-      cookies += clickPower;
+      gameState.cookies += gameState.clickPower;
       
       // Add click animation
       cookie.classList.add('clicked');
@@ -300,18 +358,19 @@
       }, 200);
       
       // Create floating cookies based on click power
-      for (let i = 0; i < clickPower; i++) {
+      for (let i = 0; i < gameState.clickPower; i++) {
         setTimeout(() => createFloatingCookie(), i * 100);
       }
       
       updateDisplay();
+      saveGame();
     });
 
     buyClickUpgrade.addEventListener("click", () => {
-      if (cookies >= clickUpgradeCost) {
-        cookies -= clickUpgradeCost;
-        clickPower++;
-        clickUpgradeCost = Math.floor(clickUpgradeCost * 2);
+      if (gameState.cookies >= gameState.clickUpgradeCost) {
+        gameState.cookies -= gameState.clickUpgradeCost;
+        gameState.clickPower++;
+        gameState.clickUpgradeCost = Math.floor(gameState.clickUpgradeCost * 2);
         
         // Add purchase animation
         buyClickUpgrade.classList.add('purchased');
@@ -320,14 +379,15 @@
         }, 500);
         
         updateDisplay();
+        saveGame();
       }
     });
 
     buyAutoClicker.addEventListener("click", () => {
-      if (cookies >= autoClickerCost) {
-        cookies -= autoClickerCost;
-        autoClickers++;
-        autoClickerCost = Math.floor(autoClickerCost * 1.5);
+      if (gameState.cookies >= gameState.autoClickerCost) {
+        gameState.cookies -= gameState.autoClickerCost;
+        gameState.autoClickers++;
+        gameState.autoClickerCost = Math.floor(gameState.autoClickerCost * 1.5);
         
         // Add purchase animation
         buyAutoClicker.classList.add('purchased');
@@ -336,14 +396,15 @@
         }, 500);
         
         updateDisplay();
+        saveGame();
       }
     });
 
     buyDelivery.addEventListener("click", () => {
-      if (cookies >= deliveryCost) {
-        cookies -= deliveryCost;
-        deliveries++;
-        deliveryCost = Math.floor(deliveryCost * 1.4);
+      if (gameState.cookies >= gameState.deliveryCost) {
+        gameState.cookies -= gameState.deliveryCost;
+        gameState.deliveries++;
+        gameState.deliveryCost = Math.floor(gameState.deliveryCost * 1.4);
         
         // Add purchase animation
         buyDelivery.classList.add('purchased');
@@ -352,14 +413,15 @@
         }, 500);
         
         updateDisplay();
+        saveGame();
       }
     });
 
     buyFactory.addEventListener("click", () => {
-      if (cookies >= factoryCost) {
-        cookies -= factoryCost;
-        factories++;
-        factoryCost = Math.floor(factoryCost * 1.6);
+      if (gameState.cookies >= gameState.factoryCost) {
+        gameState.cookies -= gameState.factoryCost;
+        gameState.factories++;
+        gameState.factoryCost = Math.floor(gameState.factoryCost * 1.6);
         
         // Add purchase animation
         buyFactory.classList.add('purchased');
@@ -368,49 +430,57 @@
         }, 500);
         
         updateDisplay();
+        saveGame();
       }
     });
-
-    // Automatisch koekjes genereren
-    setInterval(() => {
-      cookies += autoClickers + deliveries * 5 + factories * 10;
-      updateDisplay();
-    }, 1000);
-
-    // Automatisch kopen
-    const autoBuyInterval = setInterval(() => {
-      if (!autoBuyEnabled) return;
-      
-      if (cookies >= clickUpgradeCost) {
-        cookies -= clickUpgradeCost;
-        clickPower++;
-        clickUpgradeCost = Math.floor(clickUpgradeCost * 2);
-      }
-      if (cookies >= factoryCost) {
-        cookies -= factoryCost;
-        factories++;
-        factoryCost = Math.floor(factoryCost * 1.6);
-      }
-      if (cookies >= deliveryCost) {
-        cookies -= deliveryCost;
-        deliveries++;
-        deliveryCost = Math.floor(deliveryCost * 1.4);
-      }
-      if (cookies >= autoClickerCost) {
-        cookies -= autoClickerCost;
-        autoClickers++;
-        autoClickerCost = Math.floor(autoClickerCost * 1.5);
-      }
-      updateDisplay();
-    }, 2000);
 
     // Automatisch kopen toggle
     autoBuyToggle.addEventListener("click", () => {
-      autoBuyEnabled = !autoBuyEnabled;
-      autoBuyToggle.textContent = `Automatisch Kopen: ${autoBuyEnabled ? "AAN" : "UIT"}`;
-      autoBuyToggle.style.backgroundColor = autoBuyEnabled ? "#f44336" : "#4caf50";
+      gameState.autoBuyEnabled = !gameState.autoBuyEnabled;
+      updateDisplay();
+      saveGame();
     });
 
+    // Reset button
+    resetButton.addEventListener("click", resetGame);
+
+    // Automatisch koekjes genereren
+    setInterval(() => {
+      gameState.cookies += gameState.autoClickers + gameState.deliveries * 5 + gameState.factories * 10;
+      updateDisplay();
+      saveGame();
+    }, 1000);
+
+    // Automatisch kopen
+    setInterval(() => {
+      if (!gameState.autoBuyEnabled) return;
+      
+      if (gameState.cookies >= gameState.clickUpgradeCost) {
+        gameState.cookies -= gameState.clickUpgradeCost;
+        gameState.clickPower++;
+        gameState.clickUpgradeCost = Math.floor(gameState.clickUpgradeCost * 2);
+      }
+      if (gameState.cookies >= gameState.factoryCost) {
+        gameState.cookies -= gameState.factoryCost;
+        gameState.factories++;
+        gameState.factoryCost = Math.floor(gameState.factoryCost * 1.6);
+      }
+      if (gameState.cookies >= gameState.deliveryCost) {
+        gameState.cookies -= gameState.deliveryCost;
+        gameState.deliveries++;
+        gameState.deliveryCost = Math.floor(gameState.deliveryCost * 1.4);
+      }
+      if (gameState.cookies >= gameState.autoClickerCost) {
+        gameState.cookies -= gameState.autoClickerCost;
+        gameState.autoClickers++;
+        gameState.autoClickerCost = Math.floor(gameState.autoClickerCost * 1.5);
+      }
+      updateDisplay();
+      saveGame();
+    }, 2000);
+
+    // Initialize the game
+    loadGame();
     updateDisplay();
   </script>
 </body>
