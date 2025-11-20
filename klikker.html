@@ -7,33 +7,120 @@
   <style>
     body {
       text-align: center;
-      font-family: Arial, sans-serif;
-      background: #fceabb;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom, #fceabb, #f8b500);
       margin: 0;
       padding: 0;
+      min-height: 100vh;
+      color: #5d4037;
     }
     h1 {
       margin-top: 20px;
+      color: #5d4037;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
     }
     #score {
-      font-size: 24px;
+      font-size: 28px;
       margin: 10px;
+      font-weight: bold;
+      background-color: rgba(255, 255, 255, 0.7);
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: 50px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
+    
+    /* Cookie styling */
     #cookie {
-      width: 200px;
-      height: 200px;
-      background-image: url('https://upload.wikimedia.org/wikipedia/commons/6/69/Chocolate_Chip_Cookie.png');
-      background-size: cover;
-      margin: 20px auto;
+      width: 220px;
+      height: 220px;
+      margin: 30px auto;
       border-radius: 50%;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      background-color: #d2691e;
+      position: relative;
+      cursor: pointer;
+      box-shadow: 
+        0 8px 16px rgba(0,0,0,0.3),
+        inset 0 -8px 16px rgba(0,0,0,0.3),
+        inset 0 8px 16px rgba(255,255,255,0.2);
+      transition: transform 0.1s, box-shadow 0.1s;
+      overflow: hidden;
     }
+    
+    /* Chocolate chips */
+    .chip {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background-color: #3e2723;
+      border-radius: 50%;
+    }
+    
+    /* Chip positions */
+    .chip:nth-child(1) { top: 30%; left: 30%; }
+    .chip:nth-child(2) { top: 40%; left: 60%; }
+    .chip:nth-child(3) { top: 60%; left: 40%; }
+    .chip:nth-child(4) { top: 50%; left: 20%; }
+    .chip:nth-child(5) { top: 70%; left: 70%; }
+    .chip:nth-child(6) { top: 20%; left: 50%; }
+    .chip:nth-child(7) { top: 65%; left: 25%; }
+    .chip:nth-child(8) { top: 35%; left: 70%; }
+    
     #cookie:active {
       transform: scale(0.95);
     }
+    
+    /* Click animation */
+    @keyframes clickAnimation {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    
+    .clicked {
+      animation: clickAnimation 0.2s;
+    }
+    
+    /* Floating cookies animation */
+    @keyframes floatCookie {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(-100px) rotate(20deg); opacity: 0; }
+    }
+    
+    .floating-cookie {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background-color: #d2691e;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: floatCookie 1.5s ease-out forwards;
+    }
+    
+    /* Shop styling */
     #shop {
       margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 20px;
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
+    
+    .shop-item {
+      margin: 10px;
+      padding: 15px;
+      border-radius: 10px;
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      min-width: 180px;
+    }
+    
     button {
       padding: 10px 20px;
       font-size: 16px;
@@ -43,31 +130,95 @@
       background-color: #ff9800;
       color: white;
       cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
+    
+    button:hover {
+      background-color: #f57c00;
+      transform: translateY(-2px);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
     button:disabled {
       background-color: #ccc;
       cursor: not-allowed;
+      transform: none;
+    }
+    
+    #autoBuyToggle {
+      background-color: #4caf50;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    
+    #autoBuyToggle:hover {
+      background-color: #388e3c;
+    }
+    
+    .stats {
+      font-size: 14px;
+      margin-top: 5px;
+      color: #5d4037;
+    }
+    
+    /* Purchase animation */
+    @keyframes purchaseAnimation {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    
+    .purchased {
+      animation: purchaseAnimation 0.5s;
     }
   </style>
 </head>
 <body>
   <h1>🍪 Cookie Clicker</h1>
   <div id="score">Cookies: 0</div>
-  <div id="cookie"></div>
+  
+  <div id="cookie">
+    <div class="chip"></div>
+    <div class="chip"></div>
+    <div class="chip"></div>
+    <div class="chip"></div>
+    <div class="chip"></div>
+    <div class="chip"></div>
+    <div class="chip"></div>
+    <div class="chip"></div>
+  </div>
 
   <div id="shop">
-    <button id="buyClickUpgrade">Upgrade Klik (Kosten: 25)</button>
-    <div id="clickPower">Koekjes per klik: 1</div>
-
-    <button id="buyAutoClicker">Koop Auto-Clicker (Kosten: 50)</button>
-    <div id="autoClickers">Auto-Clickers: 0</div>
-
-    <button id="buyDelivery">Koop Bezorger (Kosten: 75)</button>
-    <div id="deliveries">Bezorgers: 0</div>
-
-    <button id="buyFactory">Koop Fabriek (Kosten: 100)</button>
-    <div id="factories">Fabrieken: 0</div>
+    <div class="shop-item">
+      <button id="buyClickUpgrade">Upgrade Klik</button>
+      <div class="stats" id="clickPower">Koekjes per klik: 1</div>
+      <div class="stats">Kosten: <span id="clickUpgradeCostDisplay">25</span></div>
+    </div>
+    
+    <div class="shop-item">
+      <button id="buyAutoClicker">Koop Auto-Clicker</button>
+      <div class="stats" id="autoClickers">Auto-Clickers: 0</div>
+      <div class="stats">Kosten: <span id="autoClickerCostDisplay">50</span></div>
+    </div>
+    
+    <div class="shop-item">
+      <button id="buyDelivery">Koop Bezorger</button>
+      <div class="stats" id="deliveries">Bezorgers: 0</div>
+      <div class="stats">Kosten: <span id="deliveryCostDisplay">75</span></div>
+    </div>
+    
+    <div class="shop-item">
+      <button id="buyFactory">Koop Fabriek</button>
+      <div class="stats" id="factories">Fabrieken: 0</div>
+      <div class="stats">Kosten: <span id="factoryCostDisplay">100</span></div>
+    </div>
   </div>
+  
+  <button id="autoBuyToggle">Automatisch Kopen: UIT</button>
 
   <script>
     let cookies = 0;
@@ -75,6 +226,7 @@
     let autoClickers = 0;
     let deliveries = 0;
     let factories = 0;
+    let autoBuyEnabled = false;
 
     let clickUpgradeCost = 25;
     let autoClickerCost = 50;
@@ -87,11 +239,18 @@
     const buyAutoClicker = document.getElementById("buyAutoClicker");
     const buyDelivery = document.getElementById("buyDelivery");
     const buyFactory = document.getElementById("buyFactory");
+    const autoBuyToggle = document.getElementById("autoBuyToggle");
 
     const clickPowerDisplay = document.getElementById("clickPower");
     const autoClickerDisplay = document.getElementById("autoClickers");
     const deliveryDisplay = document.getElementById("deliveries");
     const factoryDisplay = document.getElementById("factories");
+
+    // Cost displays
+    const clickUpgradeCostDisplay = document.getElementById("clickUpgradeCostDisplay");
+    const autoClickerCostDisplay = document.getElementById("autoClickerCostDisplay");
+    const deliveryCostDisplay = document.getElementById("deliveryCostDisplay");
+    const factoryCostDisplay = document.getElementById("factoryCostDisplay");
 
     function updateDisplay() {
       scoreDisplay.textContent = `Cookies: ${cookies}`;
@@ -100,10 +259,10 @@
       deliveryDisplay.textContent = `Bezorgers: ${deliveries}`;
       factoryDisplay.textContent = `Fabrieken: ${factories}`;
 
-      buyClickUpgrade.textContent = `Upgrade Klik (Kosten: ${clickUpgradeCost})`;
-      buyAutoClicker.textContent = `Koop Auto-Clicker (Kosten: ${autoClickerCost})`;
-      buyDelivery.textContent = `Koop Bezorger (Kosten: ${deliveryCost})`;
-      buyFactory.textContent = `Koop Fabriek (Kosten: ${factoryCost})`;
+      clickUpgradeCostDisplay.textContent = clickUpgradeCost;
+      autoClickerCostDisplay.textContent = autoClickerCost;
+      deliveryCostDisplay.textContent = deliveryCost;
+      factoryCostDisplay.textContent = factoryCost;
 
       buyClickUpgrade.disabled = cookies < clickUpgradeCost;
       buyAutoClicker.disabled = cookies < autoClickerCost;
@@ -111,8 +270,40 @@
       buyFactory.disabled = cookies < factoryCost;
     }
 
+    function createFloatingCookie() {
+      const floatingCookie = document.createElement('div');
+      floatingCookie.classList.add('floating-cookie');
+      
+      // Position near the cookie
+      const cookieRect = cookie.getBoundingClientRect();
+      const x = cookieRect.left + Math.random() * cookieRect.width;
+      const y = cookieRect.top + Math.random() * cookieRect.height;
+      
+      floatingCookie.style.left = `${x}px`;
+      floatingCookie.style.top = `${y}px`;
+      
+      document.body.appendChild(floatingCookie);
+      
+      // Remove after animation completes
+      setTimeout(() => {
+        floatingCookie.remove();
+      }, 1500);
+    }
+
     cookie.addEventListener("click", () => {
       cookies += clickPower;
+      
+      // Add click animation
+      cookie.classList.add('clicked');
+      setTimeout(() => {
+        cookie.classList.remove('clicked');
+      }, 200);
+      
+      // Create floating cookies based on click power
+      for (let i = 0; i < clickPower; i++) {
+        setTimeout(() => createFloatingCookie(), i * 100);
+      }
+      
       updateDisplay();
     });
 
@@ -121,6 +312,13 @@
         cookies -= clickUpgradeCost;
         clickPower++;
         clickUpgradeCost = Math.floor(clickUpgradeCost * 2);
+        
+        // Add purchase animation
+        buyClickUpgrade.classList.add('purchased');
+        setTimeout(() => {
+          buyClickUpgrade.classList.remove('purchased');
+        }, 500);
+        
         updateDisplay();
       }
     });
@@ -130,6 +328,13 @@
         cookies -= autoClickerCost;
         autoClickers++;
         autoClickerCost = Math.floor(autoClickerCost * 1.5);
+        
+        // Add purchase animation
+        buyAutoClicker.classList.add('purchased');
+        setTimeout(() => {
+          buyAutoClicker.classList.remove('purchased');
+        }, 500);
+        
         updateDisplay();
       }
     });
@@ -139,6 +344,13 @@
         cookies -= deliveryCost;
         deliveries++;
         deliveryCost = Math.floor(deliveryCost * 1.4);
+        
+        // Add purchase animation
+        buyDelivery.classList.add('purchased');
+        setTimeout(() => {
+          buyDelivery.classList.remove('purchased');
+        }, 500);
+        
         updateDisplay();
       }
     });
@@ -148,6 +360,13 @@
         cookies -= factoryCost;
         factories++;
         factoryCost = Math.floor(factoryCost * 1.6);
+        
+        // Add purchase animation
+        buyFactory.classList.add('purchased');
+        setTimeout(() => {
+          buyFactory.classList.remove('purchased');
+        }, 500);
+        
         updateDisplay();
       }
     });
@@ -159,7 +378,9 @@
     }, 1000);
 
     // Automatisch kopen
-    setInterval(() => {
+    const autoBuyInterval = setInterval(() => {
+      if (!autoBuyEnabled) return;
+      
       if (cookies >= clickUpgradeCost) {
         cookies -= clickUpgradeCost;
         clickPower++;
@@ -182,6 +403,13 @@
       }
       updateDisplay();
     }, 2000);
+
+    // Automatisch kopen toggle
+    autoBuyToggle.addEventListener("click", () => {
+      autoBuyEnabled = !autoBuyEnabled;
+      autoBuyToggle.textContent = `Automatisch Kopen: ${autoBuyEnabled ? "AAN" : "UIT"}`;
+      autoBuyToggle.style.backgroundColor = autoBuyEnabled ? "#f44336" : "#4caf50";
+    });
 
     updateDisplay();
   </script>
