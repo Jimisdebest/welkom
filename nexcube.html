@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Nexcube Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #f0f0f0;
+        }
+
+        .timer-display {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: clamp(16px, 5vw, 24px);
+            font-weight: bold;
+            z-index: 10;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: clamp(8px, 2vw, 12px) clamp(15px, 4vw, 20px);
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.5s ease;
+            text-align: center;
+            max-width: 90vw;
+            word-break: break-word;
+        }
+
+        .timer-display.animate {
+            transform: translateX(-50%) scale(1.3);
+            top: 50%;
+            font-size: clamp(24px, 10vw, 48px);
+            background-color: rgba(255, 255, 255, 0.98);
+            padding: clamp(20px, 5vw, 30px) clamp(30px, 8vw, 40px);
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 3px solid #3498db;
+        }
+
+        .timer-display.error {
+            transform: translateX(-50%) scale(1.3);
+            top: 50%;
+            font-size: clamp(18px, 6vw, 28px);
+            background-color: rgba(255, 255, 255, 0.98);
+            padding: clamp(20px, 5vw, 30px) clamp(30px, 8vw, 40px);
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 3px solid #e74c3c;
+            color: #e74c3c;
+        }
+
+        .timer-display.record {
+            transform: translateX(-50%) scale(1.3);
+            top: 50%;
+            font-size: clamp(20px, 7vw, 32px);
+            background-color: rgba(255, 215, 0, 0.95);
+            padding: clamp(20px, 5vw, 30px) clamp(30px, 8vw, 40px);
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 3px solid #ffd700;
+            color: #333;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .timer-display.reset-animation {
+            animation: resetPulse 0.8s ease-in-out;
+        }
+
+        @keyframes resetPulse {
+            0% {
+                transform: translateX(-50%) scale(1.3);
+                opacity: 1;
+            }
+            50% {
+                transform: translateX(-50%) scale(1.6);
+                opacity: 0.7;
+            }
+            100% {
+                transform: translateX(-50%) scale(0.1);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            flex-direction: row; /* Altijd naast elkaar */
+        }
+
+        .button {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(18px, 6vw, 24px);
+            font-weight: bold;
+            color: white;
+            transition: background-color 0.1s;
+            cursor: pointer;
+            min-height: 100vh; /* Volledige hoogte */
+            padding: 20px;
+            text-align: center;
+        }
+
+        .left-button {
+            background-color: #e74c3c;
+        }
+
+        .left-button.active {
+            background-color: #c0392b;
+        }
+
+        .right-button {
+            background-color: #3498db;
+        }
+
+        .right-button.active {
+            background-color: #2980b9;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: #333;
+            font-size: clamp(12px, 3vw, 16px);
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: clamp(6px, 2vw, 10px) clamp(12px, 3vw, 18px);
+            border-radius: 10px;
+            z-index: 10;
+            max-width: 90vw;
+            word-break: break-word;
+        }
+
+        .control-buttons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 8px;
+            z-index: 20;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            max-width: 60vw;
+        }
+
+        .control-btn {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 5px;
+            padding: clamp(6px, 2vw, 8px) clamp(8px, 2vw, 12px);
+            font-size: clamp(12px, 3vw, 16px);
+            cursor: pointer;
+            transition: background-color 0.3s;
+            min-width: 40px;
+        }
+
+        .control-btn:hover {
+            background-color: rgba(255, 255, 255, 1);
+        }
+
+        /* Verberg knoppen in fullscreen modus */
+        body:fullscreen .control-buttons,
+        body:-webkit-full-screen .control-buttons,
+        body:-moz-full-screen .control-buttons {
+            display: none;
+        }
+
+        .info-overlay, .scores-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .info-content, .scores-content {
+            max-width: 90vw;
+            max-height: 90vh;
+            background-color: #333;
+            padding: clamp(20px, 5vw, 30px);
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+        }
+
+        .info-content h2, .scores-content h2 {
+            margin-bottom: 20px;
+            color: #3498db;
+            font-size: clamp(20px, 6vw, 28px);
+        }
+
+        .info-content p {
+            margin-bottom: 15px;
+            line-height: 1.5;
+            font-size: clamp(14px, 4vw, 16px);
+        }
+
+        .info-content ul {
+            text-align: left;
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+
+        .info-content li {
+            margin-bottom: 10px;
+            line-height: 1.4;
+            font-size: clamp(14px, 4vw, 16px);
+        }
+
+        .close-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: clamp(14px, 4vw, 16px);
+            cursor: pointer;
+            margin-top: 15px;
+            margin-right: 10px;
+        }
+
+        .score-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+            text-align: center;
+            width: 100%;
+        }
+
+        .score-item {
+            font-size: clamp(16px, 4vw, 20px);
+            margin: 10px 0;
+            padding: 12px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .score-info {
+            flex: 1;
+            text-align: left;
+        }
+
+        .score-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .delete-score {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: clamp(12px, 3vw, 14px);
+        }
+
+        .score-item.current {
+            background-color: rgba(52, 152, 219, 0.3);
+            border: 2px solid #3498db;
+        }
+
+        /* Confetti styles */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 90;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #f00;
+            opacity: 0;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .countdown {
+            font-size: clamp(32px, 12vw, 48px);
+            font-weight: bold;
+            color: #e74c3c;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: clamp(15px, 5vw, 25px) clamp(25px, 8vw, 40px);
+            border-radius: 15px;
+            display: none;
+            text-align: center;
+        }
+
+        .scores-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .scores-title {
+            flex: 1;
+            text-align: center;
+        }
+
+        @media (max-width: 480px) {
+            .control-buttons {
+                top: 5px;
+                right: 5px;
+                gap: 5px;
+            }
+            
+            .control-btn {
+                padding: 5px 8px;
+                font-size: 14px;
+            }
+            
+            .timer-display {
+                top: 5px;
+                padding: 6px 12px;
+            }
+            
+            .instructions {
+                bottom: 5px;
+                padding: 5px 10px;
+            }
+            
+            .button {
+                font-size: 16px;
+                min-height: 100vh; /* Blijf volledige hoogte op mobiel */
+            }
+        }
+
+        @media (max-width: 320px) {
+            .control-btn {
+                padding: 4px 6px;
+                font-size: 12px;
+                min-width: 35px;
+            }
+            
+            .timer-display {
+                font-size: 14px;
+            }
+            
+            .instructions {
+                font-size: 11px;
+            }
+            
+            .button {
+                font-size: 14px;
+                padding: 15px;
+            }
+        }
+
+        /* Zorg dat de knoppen altijd naast elkaar blijven */
+        @media (orientation: portrait) {
+            .container {
+                flex-direction: row;
+            }
+        }
+
+        @media (orientation: landscape) {
+            .container {
+                flex-direction: row;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="control-buttons">
+        <button class="control-btn" id="fullscreenBtn">⛶</button>
+        <button class="control-btn" id="scoresBtn">🏆</button>
+        <button class="control-btn" id="infoBtn">i</button>
+    </div>
+    
+    <div class="timer-display" id="timerDisplay">Houd beide knoppen vast om te starten</div>
+    <div class="countdown" id="countdown"></div>
+    
+    <div class="container">
+        <div class="button left-button" id="leftButton"></div>
+        <div class="button right-button" id="rightButton"></div>
+    </div>
+
+    <div class="instructions" id="instructions">
+        Houd beide knoppen ingedrukt en laat ze tegelijk los om de timer te starten
+    </div>
+
+    <div class="info-overlay" id="infoOverlay">
+        <div class="info-content">
+            <h2>Nexcube Timer Handleiding</h2>
+            <p><strong>Welkom bij de Nexcube timer voor Rubik's Cube speedsolving!</strong></p>
+            
+            <div style="text-align: left; margin: 20px 0;">
+                <p><strong>📋 Hoe werkt het:</strong></p>
+                <ul>
+                    <li><strong>Timer starten:</strong> Houd beide knoppen ingedrukt en laat ze binnen 1 seconde van elkaar los</li>
+                    <li><strong>Gemiddelde tijd:</strong> Als knoppen niet precies tegelijk worden losgelaten, wordt het gemiddelde genomen</li>
+                    <li><strong>Wachtperiode:</strong> Er is 1 seconde wachtperiode voordat de timer echt start</li>
+                    <li><strong>Timer stoppen:</strong> Druk op ÉÉN van de knoppen om de tijd te stoppen (met confetti!)</li>
+                </ul>
+
+                <p><strong>🏆 Scorebord:</strong></p>
+                <ul>
+                    <li>Top 5 scores worden opgeslagen</li>
+                    <li>Bij een nieuw record extra confetti en animatie!</li>
+                    <li>Individuele scores kunnen worden verwijderd</li>
+                </ul>
+
+                <p><strong>⚙️ Extra functies:</strong></p>
+                <ul>
+                    <li><strong>Fullscreen:</strong> Klik ergens op het scherm of gebruik de fullscreen knop</li>
+                    <li><strong>Reset:</strong> Dubbelklik ergens op het scherm om de timer te resetten</li>
+                    <li><strong>Responsive:</strong> Werkt perfect op iPhone, Chromebook en alle andere devices</li>
+                </ul>
+            </div>
+            
+            <button class="close-btn" id="closeInfo">Sluiten</button>
+        </div>
+    </div>
+
+    <div class="scores-overlay" id="scoresOverlay">
+        <div class="scores-content">
+            <div class="scores-header">
+                <h2 class="scores-title">Top 5 Scores</h2>
+            </div>
+            <ul class="score-list" id="scoreList">
+                <!-- Scores worden hier ingeladen -->
+            </ul>
+            <div style="margin-top: 20px;">
+                <button class="close-btn" id="closeScores">Sluiten</button>
+                <button class="close-btn" id="clearScores" style="background-color: #95a5a6;">Wis Alle Scores</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="confetti-container" id="confettiContainer"></div>
+
+    <script>
+        // Elementen ophalen
+        const leftButton = document.getElementById('leftButton');
+        const rightButton = document.getElementById('rightButton');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const instructions = document.getElementById('instructions');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const infoBtn = document.getElementById('infoBtn');
+        const scoresBtn = document.getElementById('scoresBtn');
+        const infoOverlay = document.getElementById('infoOverlay');
+        const scoresOverlay = document.getElementById('scoresOverlay');
+        const closeInfo = document.getElementById('closeInfo');
+        const closeScores = document.getElementById('closeScores');
+        const clearScores = document.getElementById('clearScores');
+        const scoreList = document.getElementById('scoreList');
+        const confettiContainer = document.getElementById('confettiContainer');
+        const countdown = document.getElementById('countdown');
+
+        // Variabelen voor timing
+        let startTime = 0;
+        let timerInterval = null;
+        let leftPressed = false;
+        let rightPressed = false;
+        let timerRunning = false;
+        let animationTimeout = null;
+        let readyToStart = false;
+        let countdownInterval = null;
+        let firstReleaseTime = 0;
+        let releaseTimeout = null;
+        let canStartTimer = true;
+        let canStopTimer = false;
+        let currentTime = 0;
+        let releaseTimes = [];
+
+        // Scorebord functies
+        function getScores() {
+            const scores = localStorage.getItem('nexcubeScores');
+            return scores ? JSON.parse(scores) : [];
+        }
+
+        function saveScores(scores) {
+            localStorage.setItem('nexcubeScores', JSON.stringify(scores));
+        }
+
+        function addScore(time) {
+            const scores = getScores();
+            const newScore = {
+                time: time,
+                date: new Date().toLocaleDateString('nl-NL'),
+                id: Date.now() + Math.random()
+            };
+            
+            scores.push(newScore);
+            scores.sort((a, b) => a.time - b.time);
+            const topScores = scores.slice(0, 5);
+            saveScores(topScores);
+            
+            return topScores;
+        }
+
+        function deleteScore(scoreId) {
+            const scores = getScores();
+            const filteredScores = scores.filter(score => score.id !== scoreId);
+            saveScores(filteredScores);
+            displayScores();
+        }
+
+        function displayScores(currentScore = null) {
+            const scores = getScores();
+            scoreList.innerHTML = '';
+            
+            if (scores.length === 0) {
+                scoreList.innerHTML = '<li class="score-item" style="justify-content: center;">Nog geen scores</li>';
+                return;
+            }
+            
+            scores.forEach((score, index) => {
+                const li = document.createElement('li');
+                li.className = 'score-item';
+                if (currentScore && score.time === currentScore) {
+                    li.classList.add('current');
+                }
+                
+                li.innerHTML = `
+                    <div class="score-info">
+                        ${index + 1}. ${formatTime(score.time)} (${score.date})
+                    </div>
+                    <div class="score-actions">
+                        <button class="delete-score" onclick="deleteScore(${score.id})">🗑️</button>
+                    </div>
+                `;
+                scoreList.appendChild(li);
+            });
+        }
+
+        // Functie om tijd te formatteren
+        function formatTime(milliseconds) {
+            const minutes = Math.floor(milliseconds / 60000);
+            const seconds = Math.floor((milliseconds % 60000) / 1000);
+            const ms = milliseconds % 1000;
+            
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${ms.toString().padStart(3, '0')}`;
+        }
+
+        // Countdown functie
+        function startCountdown() {
+            let count = 1;
+            countdown.style.display = 'block';
+            countdown.textContent = count;
+            canStopTimer = false;
+            
+            countdownInterval = setInterval(() => {
+                count--;
+                countdown.textContent = count;
+                
+                if (count <= 0) {
+                    clearInterval(countdownInterval);
+                    countdown.style.display = 'none';
+                    canStopTimer = true;
+                    startActualTimer();
+                }
+            }, 1000);
+        }
+
+        // Echte timer starten na countdown
+        function startActualTimer() {
+            startTime = Date.now();
+            timerRunning = true;
+            instructions.textContent = "Druk op een knop om te stoppen";
+            
+            timerInterval = setInterval(() => {
+                currentTime = Date.now() - startTime;
+                timerDisplay.textContent = formatTime(currentTime);
+            }, 10);
+        }
+
+        // Reset animatie
+        function playResetAnimation() {
+            timerDisplay.classList.add('reset-animation');
+            
+            setTimeout(() => {
+                timerDisplay.classList.remove('reset-animation');
+                resetTimer();
+            }, 800);
+        }
+
+        // Record animatie tonen met nieuwe tekst
+        function showRecordAnimation(oldRecord, newRecord) {
+            timerDisplay.classList.add('record');
+            timerDisplay.innerHTML = `
+                Je hebt jouw oude record <strong>${formatTime(oldRecord)}</strong> verbroken!<br>
+                <span style="font-size: 1.3em; margin-top: 10px; display: block;">
+                    Je nieuwe record is<br>
+                    <strong style="font-size: 1.5em;">${formatTime(newRecord)}</strong>
+                </span>
+            `;
+            
+            createConfetti(300);
+        }
+
+        // Functie om timer te starten
+        function startTimer() {
+            if (timerRunning || !canStartTimer) return;
+            
+            readyToStart = false;
+            canStartTimer = false;
+            
+            leftButton.textContent = '';
+            rightButton.textContent = '';
+            
+            startCountdown();
+        }
+
+        // Controleer of knoppen binnen 1 seconde zijn losgelaten
+        function checkSimultaneousRelease(isLeft) {
+            const currentTime = Date.now();
+            releaseTimes.push(currentTime);
+            
+            if (releaseTimes.length === 1) {
+                firstReleaseTime = currentTime;
+                releaseTimeout = setTimeout(() => {
+                    if (releaseTimes.length === 1) {
+                        const averageTime = releaseTimes[0];
+                        releaseTimes = [];
+                        startTimerWithTime(averageTime);
+                    }
+                }, 1000);
+            } else if (releaseTimes.length === 2) {
+                clearTimeout(releaseTimeout);
+                const timeDifference = releaseTimes[1] - releaseTimes[0];
+                
+                if (timeDifference <= 1000) {
+                    const averageTime = (releaseTimes[0] + releaseTimes[1]) / 2;
+                    startTimerWithTime(averageTime);
+                } else {
+                    const averageTime = (releaseTimes[0] + releaseTimes[1]) / 2;
+                    startTimerWithTime(averageTime);
+                }
+                releaseTimes = [];
+            }
+        }
+
+        // Start timer met specifieke starttijd
+        function startTimerWithTime(startTimestamp) {
+            if (timerRunning || !canStartTimer) return;
+            
+            readyToStart = false;
+            canStartTimer = false;
+            
+            leftButton.textContent = '';
+            rightButton.textContent = '';
+            
+            startCountdownWithTime(startTimestamp);
+        }
+
+        // Countdown met aangepaste starttijd
+        function startCountdownWithTime(startTimestamp) {
+            let count = 1;
+            countdown.style.display = 'block';
+            countdown.textContent = count;
+            canStopTimer = false;
+            
+            countdownInterval = setInterval(() => {
+                count--;
+                countdown.textContent = count;
+                
+                if (count <= 0) {
+                    clearInterval(countdownInterval);
+                    countdown.style.display = 'none';
+                    canStopTimer = true;
+                    startActualTimerWithTime(startTimestamp);
+                }
+            }, 1000);
+        }
+
+        // Start timer met aangepaste starttijd
+        function startActualTimerWithTime(startTimestamp) {
+            startTime = startTimestamp;
+            timerRunning = true;
+            instructions.textContent = "Druk op een knop om te stoppen";
+            
+            timerInterval = setInterval(() => {
+                currentTime = Date.now() - startTime;
+                timerDisplay.textContent = formatTime(currentTime);
+            }, 10);
+        }
+
+        // Confetti animatie functie
+        function createConfetti(count = 150) {
+            const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22', '#ffd700'];
+            const confettiCount = count;
+            
+            confettiContainer.innerHTML = '';
+            
+            for (let i = 0; i < confettiCount; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const size = Math.random() * 8 + 4;
+                const left = Math.random() * 100;
+                const animationDuration = Math.random() * 3 + 2;
+                const delay = Math.random() * 2;
+                
+                confetti.style.backgroundColor = color;
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size}px`;
+                confetti.style.left = `${left}vw`;
+                confetti.style.animation = `confetti-fall ${animationDuration}s ease-in ${delay}s forwards`;
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                
+                confettiContainer.appendChild(confetti);
+            }
+        }
+
+        // Functie om timer te stoppen
+        function stopTimer() {
+            if (!timerRunning || !canStopTimer) return;
+            
+            clearInterval(timerInterval);
+            if (countdownInterval) clearInterval(countdownInterval);
+            timerRunning = false;
+            canStartTimer = true;
+            
+            const elapsed = currentTime;
+            const scores = getScores();
+            const isNewRecord = scores.length === 0 || elapsed < scores[0].time;
+            const oldRecord = scores.length > 0 ? scores[0].time : null;
+            
+            const newScores = addScore(elapsed);
+            
+            createConfetti(isNewRecord ? 300 : 150);
+            
+            if (isNewRecord && oldRecord) {
+                showRecordAnimation(oldRecord, elapsed);
+            } else {
+                timerDisplay.classList.add('animate');
+                timerDisplay.textContent = formatTime(elapsed);
+            }
+            
+            displayScores(elapsed);
+            
+            if (animationTimeout) clearTimeout(animationTimeout);
+            animationTimeout = setTimeout(() => {
+                playResetAnimation();
+            }, 3000);
+        }
+
+        // Functie om timer te resetten
+        function resetTimer() {
+            clearInterval(timerInterval);
+            if (countdownInterval) clearInterval(countdownInterval);
+            if (releaseTimeout) clearTimeout(releaseTimeout);
+            timerRunning = false;
+            leftPressed = false;
+            rightPressed = false;
+            readyToStart = false;
+            canStartTimer = true;
+            canStopTimer = false;
+            firstReleaseTime = 0;
+            releaseTimes = [];
+            timerDisplay.textContent = 'Houd beide knoppen vast om te starten';
+            timerDisplay.classList.remove('animate', 'error', 'record', 'reset-animation');
+            leftButton.classList.remove('active');
+            rightButton.classList.remove('active');
+            leftButton.textContent = 'HOU VAST';
+            rightButton.textContent = 'HOU VAST';
+            instructions.textContent = "Houd beide knoppen ingedrukt en laat ze tegelijk los om de timer te starten";
+            confettiContainer.innerHTML = '';
+            countdown.style.display = 'none';
+        }
+
+        // Controleer of knoppen klaar zijn om te starten
+        function checkReadyToStart() {
+            if (leftPressed && rightPressed && !timerRunning && !readyToStart) {
+                readyToStart = true;
+                instructions.textContent = "Laat beide knoppen LOS om te starten!";
+            }
+        }
+
+        // Event listeners voor linker knop
+        leftButton.addEventListener('mousedown', () => {
+            leftPressed = true;
+            leftButton.classList.add('active');
+            checkReadyToStart();
+        });
+
+        leftButton.addEventListener('mouseup', () => {
+            if (readyToStart && !timerRunning && canStartTimer) {
+                checkSimultaneousRelease(true);
+            } else if (timerRunning && canStopTimer) {
+                stopTimer();
+            }
+            leftPressed = false;
+            leftButton.classList.remove('active');
+        });
+
+        leftButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            leftPressed = true;
+            leftButton.classList.add('active');
+            checkReadyToStart();
+        });
+
+        leftButton.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (readyToStart && !timerRunning && canStartTimer) {
+                checkSimultaneousRelease(true);
+            } else if (timerRunning && canStopTimer) {
+                stopTimer();
+            }
+            leftPressed = false;
+            leftButton.classList.remove('active');
+        });
+
+        // Event listeners voor rechter knop
+        rightButton.addEventListener('mousedown', () => {
+            rightPressed = true;
+            rightButton.classList.add('active');
+            checkReadyToStart();
+        });
+
+        rightButton.addEventListener('mouseup', () => {
+            if (readyToStart && !timerRunning && canStartTimer) {
+                checkSimultaneousRelease(false);
+            } else if (timerRunning && canStopTimer) {
+                stopTimer();
+            }
+            rightPressed = false;
+            rightButton.classList.remove('active');
+        });
+
+        rightButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            rightPressed = true;
+            rightButton.classList.add('active');
+            checkReadyToStart();
+        });
+
+        rightButton.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (readyToStart && !timerRunning && canStartTimer) {
+                checkSimultaneousRelease(false);
+            } else if (timerRunning && canStopTimer) {
+                stopTimer();
+            }
+            rightPressed = false;
+            rightButton.classList.remove('active');
+        });
+
+        // Fullscreen functionaliteit
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Fout bij openen fullscreen: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Automatisch fullscreen bij klikken op de body
+        document.body.addEventListener('click', (e) => {
+            if (!e.target.closest('.control-btn') && 
+                !e.target.closest('.button') &&
+                !infoOverlay.contains(e.target) && 
+                !scoresOverlay.contains(e.target)) {
+                toggleFullscreen();
+            }
+        });
+
+        // Info knop functionaliteit
+        infoBtn.addEventListener('click', () => {
+            infoOverlay.style.display = 'flex';
+        });
+
+        closeInfo.addEventListener('click', () => {
+            infoOverlay.style.display = 'none';
+        });
+
+        // Scorebord functionaliteit
+        scoresBtn.addEventListener('click', () => {
+            displayScores();
+            scoresOverlay.style.display = 'flex';
+        });
+
+        closeScores.addEventListener('click', () => {
+            scoresOverlay.style.display = 'none';
+        });
+
+        clearScores.addEventListener('click', () => {
+            if (confirm('Weet je zeker dat je alle scores wilt wissen?')) {
+                localStorage.removeItem('nexcubeScores');
+                displayScores();
+            }
+        });
+
+        // Reset timer bij dubbelklikken
+        document.body.addEventListener('dblclick', resetTimer);
+
+        // Luister naar fullscreen changes
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+
+        function handleFullscreenChange() {
+            // Eventuele aanvullende logica voor fullscreen changes
+        }
+
+        // Initialiseer scorebord
+        displayScores();
+
+        // Zorg dat buttons tekst hebben bij start
+        leftButton.textContent = 'HOU VAST';
+        rightButton.textContent = 'HOU VAST';
+
+        // Maak deleteScore functie globaal beschikbaar
+        window.deleteScore = deleteScore;
+    </script>
+</body>
+</html>
