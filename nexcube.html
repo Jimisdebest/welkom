@@ -110,23 +110,52 @@
         .button {
             flex: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             font-size: clamp(18px, 6vw, 24px);
             font-weight: bold;
             color: white;
-            transition: background-color 0.1s;
+            transition: all 0.2s ease;
             cursor: pointer;
-            min-height: 100vh; /* Volledige hoogte */
+            min-height: 100vh;
             padding: 20px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button:active {
+            transform: scale(0.98);
+        }
+
+        .button.active {
+            filter: brightness(85%);
+            box-shadow: inset 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .button.hand-icon {
+            position: relative;
+        }
+
+        .button.hand-icon::before {
+            content: '👆';
+            font-size: clamp(32px, 10vw, 48px);
+            margin-bottom: 15px;
+            display: block;
+            transition: transform 0.2s ease;
+        }
+
+        .button.active.hand-icon::before {
+            content: '👇';
+            transform: translateY(5px);
         }
 
         .left-button {
             background-color: #e74c3c;
         }
 
-        .left-button.active {
+        .left-button:hover, .left-button:active {
             background-color: #c0392b;
         }
 
@@ -134,7 +163,7 @@
             background-color: #3498db;
         }
 
-        .right-button.active {
+        .right-button:hover, .right-button:active {
             background-color: #2980b9;
         }
 
@@ -173,12 +202,17 @@
             padding: clamp(6px, 2vw, 8px) clamp(8px, 2vw, 12px);
             font-size: clamp(12px, 3vw, 16px);
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
             min-width: 40px;
         }
 
         .control-btn:hover {
             background-color: rgba(255, 255, 255, 1);
+            transform: scale(1.05);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
         }
 
         /* Verberg knoppen in fullscreen modus */
@@ -188,7 +222,7 @@
             display: none;
         }
 
-        .info-overlay, .scores-overlay {
+        .info-overlay, .scores-overlay, .settings-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -206,7 +240,7 @@
             overflow-y: auto;
         }
 
-        .info-content, .scores-content {
+        .info-content, .scores-content, .settings-content {
             max-width: 90vw;
             max-height: 90vh;
             background-color: #333;
@@ -216,31 +250,31 @@
             overflow-y: auto;
         }
 
-        .info-content h2, .scores-content h2 {
+        .info-content h2, .scores-content h2, .settings-content h2 {
             margin-bottom: 20px;
             color: #3498db;
             font-size: clamp(20px, 6vw, 28px);
         }
 
-        .info-content p {
+        .info-content p, .settings-content p {
             margin-bottom: 15px;
             line-height: 1.5;
             font-size: clamp(14px, 4vw, 16px);
         }
 
-        .info-content ul {
+        .info-content ul, .settings-content ul {
             text-align: left;
             margin: 20px 0;
             padding-left: 20px;
         }
 
-        .info-content li {
+        .info-content li, .settings-content li {
             margin-bottom: 10px;
             line-height: 1.4;
             font-size: clamp(14px, 4vw, 16px);
         }
 
-        .close-btn {
+        .close-btn, .settings-btn {
             background-color: #e74c3c;
             color: white;
             border: none;
@@ -250,6 +284,16 @@
             cursor: pointer;
             margin-top: 15px;
             margin-right: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover, .settings-btn:hover {
+            background-color: #c0392b;
+            transform: scale(1.05);
+        }
+
+        .close-btn:active, .settings-btn:active {
+            transform: scale(0.95);
         }
 
         .score-list {
@@ -291,11 +335,117 @@
             padding: 6px 12px;
             cursor: pointer;
             font-size: clamp(12px, 3vw, 14px);
+            transition: all 0.3s ease;
+        }
+
+        .delete-score:hover {
+            background-color: #c0392b;
+            transform: scale(1.05);
+        }
+
+        .delete-score:active {
+            transform: scale(0.95);
         }
 
         .score-item.current {
             background-color: rgba(52, 152, 219, 0.3);
             border: 2px solid #3498db;
+        }
+
+        /* Settings styles */
+        .setting-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .setting-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .setting-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .setting-option {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .setting-option input[type="radio"] {
+            display: none;
+        }
+
+        .setting-option label {
+            display: block;
+            padding: 10px;
+            background-color: #444;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .setting-option input[type="radio"]:checked + label {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+
+        .setting-option label:hover {
+            background-color: #555;
+        }
+
+        .slider-container {
+            width: 100%;
+            margin: 15px 0;
+        }
+
+        .slider {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #444;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #3498db;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            background: #2980b9;
+            transform: scale(1.2);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #3498db;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-value {
+            text-align: center;
+            font-weight: bold;
+            margin-top: 5px;
+            color: #3498db;
         }
 
         /* Confetti styles */
@@ -382,7 +532,11 @@
             
             .button {
                 font-size: 16px;
-                min-height: 100vh; /* Blijf volledige hoogte op mobiel */
+                min-height: 100vh;
+            }
+            
+            .button.hand-icon::before {
+                font-size: 28px;
             }
         }
 
@@ -405,6 +559,10 @@
                 font-size: 14px;
                 padding: 15px;
             }
+            
+            .button.hand-icon::before {
+                font-size: 24px;
+            }
         }
 
         /* Zorg dat de knoppen altijd naast elkaar blijven */
@@ -424,6 +582,7 @@
 <body>
     <div class="control-buttons">
         <button class="control-btn" id="fullscreenBtn">⛶</button>
+        <button class="control-btn" id="settingsBtn">⚙️</button>
         <button class="control-btn" id="scoresBtn">🏆</button>
         <button class="control-btn" id="infoBtn">i</button>
     </div>
@@ -432,14 +591,15 @@
     <div class="countdown" id="countdown"></div>
     
     <div class="container">
-        <div class="button left-button" id="leftButton"></div>
-        <div class="button right-button" id="rightButton"></div>
+        <div class="button left-button hand-icon" id="leftButton"></div>
+        <div class="button right-button hand-icon" id="rightButton"></div>
     </div>
 
     <div class="instructions" id="instructions">
         Houd beide knoppen ingedrukt en laat ze tegelijk los om de timer te starten
     </div>
 
+    <!-- Info Overlay -->
     <div class="info-overlay" id="infoOverlay">
         <div class="info-content">
             <h2>Nexcube Timer Handleiding</h2>
@@ -449,8 +609,9 @@
                 <p><strong>📋 Hoe werkt het:</strong></p>
                 <ul>
                     <li><strong>Timer starten:</strong> Houd beide knoppen ingedrukt en laat ze binnen 1 seconde van elkaar los</li>
+                    <li><strong>Inspectietijd:</strong> Kies in instellingen tussen 0-15 seconden inspectietijd</li>
                     <li><strong>Gemiddelde tijd:</strong> Als knoppen niet precies tegelijk worden losgelaten, wordt het gemiddelde genomen</li>
-                    <li><strong>Wachtperiode:</strong> Er is 1 seconde wachtperiode voordat de timer echt start</li>
+                    <li><strong>Wachtperiode:</strong> Na inspectietijd start de timer automatisch</li>
                     <li><strong>Timer stoppen:</strong> Druk op ÉÉN van de knoppen om de tijd te stoppen (met confetti!)</li>
                 </ul>
 
@@ -461,7 +622,13 @@
                     <li>Individuele scores kunnen worden verwijderd</li>
                 </ul>
 
-                <p><strong>⚙️ Extra functies:</strong></p>
+                <p><strong>⚙️ Instellingen:</strong></p>
+                <ul>
+                    <li><strong>Inspectietijd:</strong> Pas de inspectietijd aan tussen 0 en 15 seconden</li>
+                    <li><strong>Handen weergeven:</strong> Toon kleine handjes op de knoppen</li>
+                </ul>
+
+                <p><strong>✨ Extra functies:</strong></p>
                 <ul>
                     <li><strong>Fullscreen:</strong> Klik ergens op het scherm of gebruik de fullscreen knop</li>
                     <li><strong>Reset:</strong> Dubbelklik ergens op het scherm om de timer te resetten</li>
@@ -473,6 +640,7 @@
         </div>
     </div>
 
+    <!-- Scores Overlay -->
     <div class="scores-overlay" id="scoresOverlay">
         <div class="scores-content">
             <div class="scores-header">
@@ -488,6 +656,41 @@
         </div>
     </div>
 
+    <!-- Settings Overlay -->
+    <div class="settings-overlay" id="settingsOverlay">
+        <div class="settings-content">
+            <h2>Instellingen</h2>
+            
+            <div class="setting-group">
+                <p class="setting-label">Inspectietijd</p>
+                <p>Stel in hoeveel seconden je de kubus mag inspecteren voordat de timer start.</p>
+                <div class="slider-container">
+                    <input type="range" min="0" max="15" value="0" class="slider" id="inspectionTimeSlider">
+                    <div class="slider-value" id="inspectionTimeValue">0 seconden</div>
+                </div>
+            </div>
+            
+            <div class="setting-group">
+                <p class="setting-label">Handen weergeven</p>
+                <div class="setting-options">
+                    <div class="setting-option">
+                        <input type="radio" id="handsOn" name="hands" checked>
+                        <label for="handsOn">Aan</label>
+                    </div>
+                    <div class="setting-option">
+                        <input type="radio" id="handsOff" name="hands">
+                        <label for="handsOff">Uit</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button class="close-btn" id="closeSettings">Opslaan en Sluiten</button>
+                <button class="close-btn" id="resetSettings" style="background-color: #95a5a6;">Reset naar Standaard</button>
+            </div>
+        </div>
+    </div>
+
     <div class="confetti-container" id="confettiContainer"></div>
 
     <script>
@@ -497,16 +700,24 @@
         const timerDisplay = document.getElementById('timerDisplay');
         const instructions = document.getElementById('instructions');
         const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
         const infoBtn = document.getElementById('infoBtn');
         const scoresBtn = document.getElementById('scoresBtn');
         const infoOverlay = document.getElementById('infoOverlay');
         const scoresOverlay = document.getElementById('scoresOverlay');
+        const settingsOverlay = document.getElementById('settingsOverlay');
         const closeInfo = document.getElementById('closeInfo');
         const closeScores = document.getElementById('closeScores');
+        const closeSettings = document.getElementById('closeSettings');
+        const resetSettings = document.getElementById('resetSettings');
         const clearScores = document.getElementById('clearScores');
         const scoreList = document.getElementById('scoreList');
         const confettiContainer = document.getElementById('confettiContainer');
         const countdown = document.getElementById('countdown');
+        const inspectionTimeSlider = document.getElementById('inspectionTimeSlider');
+        const inspectionTimeValue = document.getElementById('inspectionTimeValue');
+        const handsOn = document.getElementById('handsOn');
+        const handsOff = document.getElementById('handsOff');
 
         // Variabelen voor timing
         let startTime = 0;
@@ -523,6 +734,52 @@
         let canStopTimer = false;
         let currentTime = 0;
         let releaseTimes = [];
+
+        // Instellingen variabelen
+        let inspectionTime = 0;
+        let showHands = true;
+
+        // Laad instellingen
+        function loadSettings() {
+            const savedInspectionTime = localStorage.getItem('nexcubeInspectionTime');
+            const savedShowHands = localStorage.getItem('nexcubeShowHands');
+            
+            inspectionTime = savedInspectionTime ? parseInt(savedInspectionTime) : 0;
+            showHands = savedShowHands !== null ? savedShowHands === 'true' : true;
+            
+            // Update UI
+            inspectionTimeSlider.value = inspectionTime;
+            inspectionTimeValue.textContent = `${inspectionTime} seconden`;
+            
+            if (showHands) {
+                handsOn.checked = true;
+                leftButton.classList.add('hand-icon');
+                rightButton.classList.add('hand-icon');
+            } else {
+                handsOff.checked = true;
+                leftButton.classList.remove('hand-icon');
+                rightButton.classList.remove('hand-icon');
+            }
+            
+            updateButtonText();
+        }
+
+        // Sla instellingen op
+        function saveSettings() {
+            localStorage.setItem('nexcubeInspectionTime', inspectionTime);
+            localStorage.setItem('nexcubeShowHands', showHands);
+        }
+
+        // Update knop tekst
+        function updateButtonText() {
+            if (showHands) {
+                leftButton.innerHTML = '';
+                rightButton.innerHTML = '';
+            } else {
+                leftButton.innerHTML = 'HOU<br>VAST';
+                rightButton.innerHTML = 'HOU<br>VAST';
+            }
+        }
 
         // Scorebord functies
         function getScores() {
@@ -596,22 +853,27 @@
 
         // Countdown functie
         function startCountdown() {
-            let count = 1;
-            countdown.style.display = 'block';
-            countdown.textContent = count;
-            canStopTimer = false;
-            
-            countdownInterval = setInterval(() => {
-                count--;
+            let count = inspectionTime;
+            if (count > 0) {
+                countdown.style.display = 'block';
                 countdown.textContent = count;
+                canStopTimer = false;
                 
-                if (count <= 0) {
-                    clearInterval(countdownInterval);
-                    countdown.style.display = 'none';
-                    canStopTimer = true;
-                    startActualTimer();
-                }
-            }, 1000);
+                countdownInterval = setInterval(() => {
+                    count--;
+                    countdown.textContent = count;
+                    
+                    if (count <= 0) {
+                        clearInterval(countdownInterval);
+                        countdown.style.display = 'none';
+                        canStopTimer = true;
+                        startActualTimer();
+                    }
+                }, 1000);
+            } else {
+                canStopTimer = true;
+                startActualTimer();
+            }
         }
 
         // Echte timer starten na countdown
@@ -657,9 +919,6 @@
             readyToStart = false;
             canStartTimer = false;
             
-            leftButton.textContent = '';
-            rightButton.textContent = '';
-            
             startCountdown();
         }
 
@@ -699,30 +958,32 @@
             readyToStart = false;
             canStartTimer = false;
             
-            leftButton.textContent = '';
-            rightButton.textContent = '';
-            
             startCountdownWithTime(startTimestamp);
         }
 
         // Countdown met aangepaste starttijd
         function startCountdownWithTime(startTimestamp) {
-            let count = 1;
-            countdown.style.display = 'block';
-            countdown.textContent = count;
-            canStopTimer = false;
-            
-            countdownInterval = setInterval(() => {
-                count--;
+            let count = inspectionTime;
+            if (count > 0) {
+                countdown.style.display = 'block';
                 countdown.textContent = count;
+                canStopTimer = false;
                 
-                if (count <= 0) {
-                    clearInterval(countdownInterval);
-                    countdown.style.display = 'none';
-                    canStopTimer = true;
-                    startActualTimerWithTime(startTimestamp);
-                }
-            }, 1000);
+                countdownInterval = setInterval(() => {
+                    count--;
+                    countdown.textContent = count;
+                    
+                    if (count <= 0) {
+                        clearInterval(countdownInterval);
+                        countdown.style.display = 'none';
+                        canStopTimer = true;
+                        startActualTimerWithTime(startTimestamp);
+                    }
+                }, 1000);
+            } else {
+                canStopTimer = true;
+                startActualTimerWithTime(startTimestamp);
+            }
         }
 
         // Start timer met aangepaste starttijd
@@ -815,8 +1076,7 @@
             timerDisplay.classList.remove('animate', 'error', 'record', 'reset-animation');
             leftButton.classList.remove('active');
             rightButton.classList.remove('active');
-            leftButton.textContent = 'HOU VAST';
-            rightButton.textContent = 'HOU VAST';
+            updateButtonText();
             instructions.textContent = "Houd beide knoppen ingedrukt en laat ze tegelijk los om de timer te starten";
             confettiContainer.innerHTML = '';
             countdown.style.display = 'none';
@@ -920,7 +1180,8 @@
             if (!e.target.closest('.control-btn') && 
                 !e.target.closest('.button') &&
                 !infoOverlay.contains(e.target) && 
-                !scoresOverlay.contains(e.target)) {
+                !scoresOverlay.contains(e.target) &&
+                !settingsOverlay.contains(e.target)) {
                 toggleFullscreen();
             }
         });
@@ -932,6 +1193,35 @@
 
         closeInfo.addEventListener('click', () => {
             infoOverlay.style.display = 'none';
+        });
+
+        // Settings knop functionaliteit
+        settingsBtn.addEventListener('click', () => {
+            settingsOverlay.style.display = 'flex';
+        });
+
+        closeSettings.addEventListener('click', () => {
+            // Sla instellingen op
+            inspectionTime = parseInt(inspectionTimeSlider.value);
+            showHands = handsOn.checked;
+            
+            saveSettings();
+            updateButtonText();
+            
+            settingsOverlay.style.display = 'none';
+        });
+
+        resetSettings.addEventListener('click', () => {
+            // Reset naar standaard instellingen
+            inspectionTimeSlider.value = 0;
+            inspectionTime = 0;
+            showHands = true;
+            handsOn.checked = true;
+            
+            inspectionTimeValue.textContent = `${inspectionTime} seconden`;
+            
+            saveSettings();
+            updateButtonText();
         });
 
         // Scorebord functionaliteit
@@ -951,6 +1241,11 @@
             }
         });
 
+        // Update inspection time display
+        inspectionTimeSlider.addEventListener('input', () => {
+            inspectionTimeValue.textContent = `${inspectionTimeSlider.value} seconden`;
+        });
+
         // Reset timer bij dubbelklikken
         document.body.addEventListener('dblclick', resetTimer);
 
@@ -963,12 +1258,9 @@
             // Eventuele aanvullende logica voor fullscreen changes
         }
 
-        // Initialiseer scorebord
+        // Initialiseer instellingen en scorebord
+        loadSettings();
         displayScores();
-
-        // Zorg dat buttons tekst hebben bij start
-        leftButton.textContent = 'HOU VAST';
-        rightButton.textContent = 'HOU VAST';
 
         // Maak deleteScore functie globaal beschikbaar
         window.deleteScore = deleteScore;
