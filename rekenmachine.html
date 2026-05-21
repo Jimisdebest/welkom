@@ -1,544 +1,509 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Animated Calculator</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-            padding: 20px;
-            overflow-x: hidden;
-        }
-        
-        .calculator-container {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            perspective: 1000px;
-        }
-        
-        .calculator {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 25px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            animation: float 6s ease-in-out infinite, slideIn 0.8s ease-out;
-            transform-style: preserve-3d;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotateX(5deg); }
-            50% { transform: translateY(-10px) rotateX(5deg); }
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(50px) rotateX(30deg);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) rotateX(5deg);
-            }
-        }
-        
-        .display {
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 30px 25px;
-            text-align: right;
-            font-size: 2.5rem;
-            min-height: 140px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .display::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #ff9500, #ff5e00, #ff2975, #ff00d4, #6a11cb);
-            animation: rainbow 5s linear infinite;
-        }
-        
-        @keyframes rainbow {
-            0% { background-position: 0% 50%; }
-            100% { background-position: 100% 50%; }
-        }
-        
-        .previous-operand {
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.7);
-            min-height: 1.5rem;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }
-        
-        .current-operand {
-            word-wrap: break-word;
-            word-break: break-all;
-            transition: all 0.3s ease;
-        }
-        
-        .buttons {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            padding: 25px;
-        }
-        
-        button {
-            border: none;
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
-            font-size: 1.5rem;
-            height: 80px;
-            border-radius: 15px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: 0.5s;
-        }
-        
-        button:hover::before {
-            left: 100%;
-        }
-        
-        button:hover {
-            transform: scale(1.08) translateY(-5px);
-            background: rgba(255, 255, 255, 0.25);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-        }
-        
-        button:active {
-            transform: scale(0.95) translateY(0);
-            transition: 0.1s;
-        }
-        
-        .operator {
-            background: rgba(255, 149, 0, 0.7);
-        }
-        
-        .operator:hover {
-            background: rgba(255, 149, 0, 0.9);
-        }
-        
-        .equals {
-            background: linear-gradient(135deg, #ff9500, #ff5e00);
-            grid-column: span 2;
-        }
-        
-        .equals:hover {
-            background: linear-gradient(135deg, #ffaa33, #ff7e33);
-        }
-        
-        .clear {
-            background: rgba(166, 166, 166, 0.7);
-            color: #1a1a1a;
-        }
-        
-        .clear:hover {
-            background: rgba(191, 191, 191, 0.9);
-        }
-        
-        .number {
-            background: rgba(80, 80, 80, 0.7);
-        }
-        
-        .number:hover {
-            background: rgba(100, 100, 100, 0.9);
-        }
-        
-        .zero {
-            grid-column: span 2;
-        }
-        
-        .ripple {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.7);
-            transform: scale(0);
-            animation: ripple 0.6s linear;
-            pointer-events: none;
-        }
-        
-        @keyframes ripple {
-            to {
-                transform: scale(2.5);
-                opacity: 0;
-            }
-        }
-        
-        .calculator-title {
-            text-align: center;
-            color: white;
-            margin-bottom: 20px;
-            font-size: 1.8rem;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-        }
-        
-        .floating-elements {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            z-index: -1;
-        }
-        
-        .floating-element {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            animation: floatAround 15s infinite linear;
-        }
-        
-        @keyframes floatAround {
-            0% {
-                transform: translate(0, 0) rotate(0deg);
-            }
-            33% {
-                transform: translate(30px, -50px) rotate(120deg);
-            }
-            66% {
-                transform: translate(-20px, 20px) rotate(240deg);
-            }
-            100% {
-                transform: translate(0, 0) rotate(360deg);
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .calculator {
-                max-width: 100%;
-            }
-            
-            button {
-                height: 70px;
-                font-size: 1.3rem;
-            }
-            
-            .display {
-                padding: 25px 20px;
-                font-size: 2rem;
-                min-height: 120px;
-            }
-            
-            .buttons {
-                gap: 12px;
-                padding: 20px;
-            }
-        }
-        
-        @media (max-width: 350px) {
-            button {
-                height: 60px;
-                font-size: 1.2rem;
-            }
-            
-            .display {
-                padding: 20px 15px;
-                font-size: 1.8rem;
-                min-height: 100px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Simpele Rekenmachine | Eén duidelijk scherm</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none; /* voorkomt per ongeluk selecteren op mobiel */
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(145deg, #e2e9f0 0%, #d1dbe8 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      padding: 1rem;
+    }
+
+    /* Rekenmachine container - vloeiend en past in elk scherm */
+    .calculator {
+      max-width: 500px;
+      width: 100%;
+      background: #1e2a3a;
+      border-radius: 2.5rem;
+      box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2), 0 5px 12px rgba(0, 0, 0, 0.1);
+      padding: 1.8rem 1.5rem 2rem 1.5rem;
+      transition: all 0.2s ease;
+    }
+
+    /* Display / scherm: EÉN veld waar het antwoord en de invoer samenkomen */
+    /* We tonen de invoer + het resultaat op een heldere manier: 
+       Bovenste regel: de ingedrukte som (expressie) 
+       Onderste regel: het resultaat = antwoord */
+    .display {
+      background: #0f1720;
+      border-radius: 1.8rem;
+      padding: 1.2rem 1.2rem;
+      margin-bottom: 1.8rem;
+      box-shadow: inset 0 3px 6px rgba(0,0,0,0.3), 0 2px 4px rgba(255,255,255,0.05);
+    }
+
+    /* expressie (wat je typt / toetst) */
+    #expression {
+      width: 100%;
+      background: transparent;
+      border: none;
+      font-size: 1.5rem;
+      font-weight: 500;
+      font-family: 'Courier New', 'Fira Mono', monospace;
+      color: #bbd9ff;
+      text-align: right;
+      letter-spacing: 1px;
+      word-wrap: break-word;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px dashed #2a3a4a;
+    }
+
+    /* HET ANTWOORD (groot en duidelijk, direct zichtbaar) */
+    #answer {
+      width: 100%;
+      background: transparent;
+      border: none;
+      font-size: 2.8rem;
+      font-weight: 700;
+      font-family: 'Courier New', 'Fira Mono', monospace;
+      color: #f0f3f8;
+      text-align: right;
+      margin-top: 0.6rem;
+      word-break: break-word;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    input:focus {
+      outline: none;
+    }
+
+    /* knoppen grid - perfect responsief */
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.9rem;
+    }
+
+    /* universele knopstijl */
+    .btn {
+      background: #2d3e4f;
+      border: none;
+      font-size: 1.7rem;
+      font-weight: 600;
+      padding: 1rem 0;
+      border-radius: 2rem;
+      color: #ecf0f1;
+      font-family: inherit;
+      transition: all 0.1s linear;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #0f1a22;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* knop indrukken effect */
+    .btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #0f1a22;
+    }
+
+    /* speciale knoppen */
+    .btn-clear {
+      background: #ac3e2f;
+      color: white;
+      box-shadow: 0 5px 0 #63261c;
+    }
+
+    .btn-delete {
+      background: #b46f3a;
+      color: white;
+      box-shadow: 0 5px 0 #6e3e1c;
+    }
+
+    .btn-equal {
+      background: #2c6e4f;
+      color: white;
+      box-shadow: 0 5px 0 #1a3f2e;
+      font-size: 2rem;
+    }
+
+    .btn-operator {
+      background: #3a5c6e;
+      color: #f9e79f;
+      font-weight: 700;
+    }
+
+    /* hover voor desktop (subtiel, geen layout verschuiving) */
+    @media (hover: hover) {
+      .btn:hover {
+        filter: brightness(1.05);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 0 #0f1a22;
+      }
+      .btn:active {
+        transform: translateY(3px);
+        box-shadow: 0 2px 0 #0f1a22;
+      }
+    }
+
+    /* kleinere schermen: padding en fontsize aanpassen */
+    @media (max-width: 480px) {
+      .calculator {
+        padding: 1.2rem 1rem 1.5rem 1rem;
+      }
+      .btn {
+        font-size: 1.4rem;
+        padding: 0.8rem 0;
+        border-radius: 1.6rem;
+      }
+      #answer {
+        font-size: 2.2rem;
+      }
+      #expression {
+        font-size: 1.2rem;
+      }
+      .buttons {
+        gap: 0.7rem;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .btn {
+        font-size: 1.2rem;
+        padding: 0.6rem 0;
+      }
+      .btn-equal {
+        font-size: 1.7rem;
+      }
+      .buttons {
+        gap: 0.5rem;
+      }
+    }
+
+    .footer-info {
+      text-align: center;
+      font-size: 0.7rem;
+      color: #7f8c8d;
+      margin-top: 1.8rem;
+      letter-spacing: 0.5px;
+    }
+    .footer-info span {
+      color: #9aaebf;
+    }
+  </style>
 </head>
 <body>
-    <div class="calculator-container">
-        <h1 class="calculator-title">Animated Calculator</h1>
-        <div class="calculator">
-            <div class="display">
-                <div class="previous-operand"></div>
-                <div class="current-operand">0</div>
-            </div>
-            <div class="buttons">
-                <button class="clear">C</button>
-                <button class="operator">±</button>
-                <button class="operator">%</button>
-                <button class="operator">÷</button>
-                
-                <button class="number">7</button>
-                <button class="number">8</button>
-                <button class="number">9</button>
-                <button class="operator">×</button>
-                
-                <button class="number">4</button>
-                <button class="number">5</button>
-                <button class="number">6</button>
-                <button class="operator">-</button>
-                
-                <button class="number">1</button>
-                <button class="number">2</button>
-                <button class="number">3</button>
-                <button class="operator">+</button>
-                
-                <button class="number zero">0</button>
-                <button class="number">.</button>
-                <button class="equals">=</button>
-            </div>
-        </div>
-    </div>
+<div class="calculator">
+  <div class="display">
+    <!-- Eén blok: bovenaan zie je wat je intoetst (expressie) -->
+    <div id="expression">0</div>
+    <!-- Hieronder het DUIDELIJKE ANTWOORD - direct resultaat -->
+    <div id="answer">0</div>
+  </div>
+  
+  <div class="buttons" id="buttonsGrid">
+    <!-- Rij 1: Clear, Delete, Delen, Vermenigvuldigen -->
+    <button class="btn btn-clear" data-action="clear">C</button>
+    <button class="btn btn-delete" data-action="delete">⌫</button>
+    <button class="btn btn-operator" data-op="/">÷</button>
+    <button class="btn btn-operator" data-op="*">×</button>
     
-    <div class="floating-elements">
-        <!-- Floating elements for background animation -->
-    </div>
+    <!-- Rij 2: 7 8 9 - -->
+    <button class="btn" data-num="7">7</button>
+    <button class="btn" data-num="8">8</button>
+    <button class="btn" data-num="9">9</button>
+    <button class="btn btn-operator" data-op="-">-</button>
+    
+    <!-- Rij 3: 4 5 6 + -->
+    <button class="btn" data-num="4">4</button>
+    <button class="btn" data-num="5">5</button>
+    <button class="btn" data-num="6">6</button>
+    <button class="btn btn-operator" data-op="+">+</button>
+    
+    <!-- Rij 4: 1 2 3 = -->
+    <button class="btn" data-num="1">1</button>
+    <button class="btn" data-num="2">2</button>
+    <button class="btn" data-num="3">3</button>
+    <button class="btn btn-equal" data-action="equal">=</button>
+    
+    <!-- Rij 5: 0, punt, procent, +/- (teken wissel) -->
+    <button class="btn" data-num="0">0</button>
+    <button class="btn" data-num=".">.</button>
+    <button class="btn btn-operator" data-op="%">%</button>
+    <button class="btn btn-operator" data-action="sign">±</button>
+    
+    <!-- Rij 6: haakjes, machtsverheffing, wortel (handige extras maar overzichtelijk) -->
+    <button class="btn btn-operator" data-op="(">(</button>
+    <button class="btn btn-operator" data-op=")">)</button>
+    <button class="btn btn-operator" data-op="^">xʸ</button>
+    <button class="btn btn-operator" data-action="sqrt">√</button>
+  </div>
+  <div class="footer-info">
+    <span>✅ Duidelijk antwoordveld | toetsen = direct resultaat</span>
+  </div>
+</div>
 
-    <script>
-        // Create floating background elements
-        const floatingContainer = document.querySelector('.floating-elements');
-        for (let i = 0; i < 15; i++) {
-            const element = document.createElement('div');
-            element.classList.add('floating-element');
-            const size = Math.random() * 60 + 20;
-            element.style.width = `${size}px`;
-            element.style.height = `${size}px`;
-            element.style.left = `${Math.random() * 100}%`;
-            element.style.top = `${Math.random() * 100}%`;
-            element.style.animationDelay = `${Math.random() * 5}s`;
-            element.style.animationDuration = `${15 + Math.random() * 10}s`;
-            floatingContainer.appendChild(element);
+<script>
+  (function() {
+    // Elementen: EEN display voor expressie (wat je intypt) en EEN antwoord (resultaat)
+    const expressionDiv = document.getElementById('expression');
+    const answerDiv = document.getElementById('answer');
+    
+    // De huidige wiskundige expressie die de gebruiker aan het bouwen is
+    let currentExpression = "";   // bijvoorbeeld "12+3*4"
+    
+    // Hulp: werk de hele interface bij: 
+    // - toon currentExpression (of '0' als leeg)
+    // - bereken live het antwoord en toon dat in answerDiv (of foutmelding/leeg)
+    function updateDisplay() {
+      // Expressie weergeven (als leeg: placeholder "0")
+      if (currentExpression === "") {
+        expressionDiv.innerText = "0";
+      } else {
+        expressionDiv.innerText = currentExpression;
+      }
+      
+      // Als expressie leeg is, tonen we '0' als antwoord
+      if (currentExpression.trim() === "") {
+        answerDiv.innerText = "0";
+        return;
+      }
+      
+      // Probeer de huidige expressie te evalueren voor een LIVE antwoord
+      try {
+        const evalResult = evaluateExpression(currentExpression);
+        const formatted = formatResult(evalResult);
+        answerDiv.innerText = formatted;
+      } catch (err) {
+        // Bij een onvolledige expressie (bv "5+") tonen we geen antwoord of een lege 
+        // maar voor de gebruikservaring: we tonen "..." of niets? Het beste: leeg veld met hint
+        answerDiv.innerText = "?";
+      }
+    }
+    
+    // Veilige evaluatie van wiskundige expressie (+, -, ×, ÷, %, ^, √, haakjes)
+    function evaluateExpression(expr) {
+      let processed = expr.trim();
+      if (processed === "") return 0;
+      
+      // Vervang ÷ door / en × door *
+      let mathExpr = processed.replace(/÷/g, '/').replace(/×/g, '*');
+      
+      // Procent: 50% wordt (50/100) en 12.5% wordt (12.5/100)
+      mathExpr = mathExpr.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)');
+      
+      // Machtsverheffing: ^ wordt **
+      mathExpr = mathExpr.replace(/\^/g, '**');
+      
+      // Wortel: √(9) of √9 -> Math.sqrt(...)
+      mathExpr = mathExpr.replace(/√\(([^)]+)\)/g, 'Math.sqrt($1)');
+      mathExpr = mathExpr.replace(/√(\d+(?:\.\d+)?)/g, 'Math.sqrt($1)');
+      
+      // Gebruik Function om een berekening uit te voeren (beperkt bereik)
+      // extra veiligheid: toegestane karakters zijn al gefilterd via knoppen en toetsenbord
+      const evalFunc = new Function('return (' + mathExpr + ')');
+      let result = evalFunc();
+      
+      if (!isFinite(result) || isNaN(result)) {
+        throw new Error("Ongeldige berekening");
+      }
+      return result;
+    }
+    
+    // Netjes afronden, geen overbodige decimalen
+    function formatResult(value) {
+      if (value === undefined || value === null) return "0";
+      // maximaal 10 decimalen, daarna afronden
+      let rounded = Math.round(value * 1e10) / 1e10;
+      let str = rounded.toString();
+      if (str.includes('.')) {
+        str = str.replace(/\.?0+$/, '');
+      }
+      if (str === "") return "0";
+      return str;
+    }
+    
+    // Tekens toevoegen aan de expressie (cijfers, operatoren, haakjes)
+    function appendToExpression(value) {
+      // Beperk beginnende fouten: expressie mag niet starten met * / ÷ × % ^ ) (behalve '(' of '-')
+      if (currentExpression === "") {
+        if (value === '*' || value === '/' || value === '÷' || value === '×' || value === '%' || value === '^' || value === ')') {
+          return; // negeer
+        }
+      }
+      // Voorkom dubbel decimaal punt in het laatste getal (eenvoudige check)
+      if (value === '.') {
+        const lastNumberMatch = currentExpression.match(/(\d+(?:\.\d+)?)$/);
+        if (lastNumberMatch && lastNumberMatch[0].includes('.')) {
+          return; // al een punt in huidige getal
+        }
+      }
+      // voorkom opeenvolgende operatoren: (+, -, *, /, ÷, ×, %, ^) behalve dat min-teken voor negatief getal mag 
+      // maar voor eenvoud: als laatste karakter al een operator is en we voegen nog een operator toe (behalve haakje)
+      const lastChar = currentExpression.slice(-1);
+      const operators = ['+', '-', '*', '/', '÷', '×', '%', '^'];
+      if (operators.includes(lastChar) && operators.includes(value)) {
+        // Vervang de laatste operator door de nieuwe (makkelijk voor gebruik)
+        currentExpression = currentExpression.slice(0, -1) + value;
+        updateDisplay();
+        return;
+      }
+      
+      currentExpression += value;
+      updateDisplay();
+    }
+    
+    // Wissen alles
+    function clearAll() {
+      currentExpression = "";
+      updateDisplay();
+    }
+    
+    // Delete laatste teken
+    function deleteLast() {
+      currentExpression = currentExpression.slice(0, -1);
+      updateDisplay();
+    }
+    
+    // Teken wissel (±): pak het laatste getal / token en keer het teken om
+    function toggleSign() {
+      if (currentExpression === "") return;
+      // Zoek het laatste getal (of uitdrukking tussen haakjes) aan het einde van de string
+      // Matches: een getal (positief of negatief) aan het einde, of een subexpressie zoals (2+3)
+      const tokenMatch = currentExpression.match(/(\d+(?:\.\d+)?|\([^()]*\)|(?<=[\+\-\*\/\(\)\^]|^)-?\d+(?:\.\d+)?)$/);
+      if (tokenMatch) {
+        let lastToken = tokenMatch[0];
+        let newToken;
+        if (lastToken.startsWith('-')) {
+          newToken = lastToken.substring(1);
+        } else {
+          newToken = '-' + lastToken;
+        }
+        // Vervang alleen het laatste voorkomen van lastToken in de expressie
+        // Simpele reverse-strategie voor vervanging van de laatste instantie
+        const reversedExpr = currentExpression.split('').reverse().join('');
+        const reversedToken = lastToken.split('').reverse().join('');
+        const reversedNewToken = newToken.split('').reverse().join('');
+        const newReversed = reversedExpr.replace(reversedToken, reversedNewToken);
+        currentExpression = newReversed.split('').reverse().join('');
+        updateDisplay();
+      }
+    }
+    
+    // Wortel invoegen: voeg "√(" toe voor gebruiksgemak
+    function insertSqrt() {
+      currentExpression += "√(";
+      updateDisplay();
+    }
+    
+    // GELIJK aan (=) functie: evalueren en huidige expressie vervangen door het nette antwoord
+    // Hierna kan de gebruiker verder rekenen met het antwoord.
+    function computeResult() {
+      if (currentExpression === "") return;
+      try {
+        let result = evaluateExpression(currentExpression);
+        let formattedResult = formatResult(result);
+        // Zet de huidige expressie naar het nette antwoord (zoals een echte rekenmachine)
+        currentExpression = formattedResult;
+        updateDisplay();
+      } catch (err) {
+        answerDiv.innerText = "Fout";
+        // Even een korte reset van de foutmelding bij de volgende toets
+        setTimeout(() => {
+          if (answerDiv.innerText === "Fout") {
+            // Als er geen verandering is, wissen we de foutmelding niet hard, maar bij nieuwe input wordt het overschreven.
+            answerDiv.innerText = "?";
+          }
+        }, 1200);
+      }
+    }
+    
+    // Event listeners via delegatie op de knoppen
+    const buttonsContainer = document.getElementById('buttonsGrid');
+    if (buttonsContainer) {
+      buttonsContainer.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn');
+        if (!btn) return;
+        
+        // actie-knoppen (clear, delete, equal, sign, sqrt)
+        if (btn.hasAttribute('data-action')) {
+          const action = btn.getAttribute('data-action');
+          if (action === 'clear') {
+            clearAll();
+          } else if (action === 'delete') {
+            deleteLast();
+          } else if (action === 'equal') {
+            computeResult();
+          } else if (action === 'sign') {
+            toggleSign();
+          } else if (action === 'sqrt') {
+            insertSqrt();
+          }
+          return;
         }
         
-        class Calculator {
-            constructor(previousOperandElement, currentOperandElement) {
-                this.previousOperandElement = previousOperandElement;
-                this.currentOperandElement = currentOperandElement;
-                this.clear();
-            }
-            
-            clear() {
-                this.currentOperand = '0';
-                this.previousOperand = '';
-                this.operation = undefined;
-                this.updateDisplay();
-            }
-            
-            delete() {
-                this.currentOperand = this.currentOperand.toString().slice(0, -1);
-                if (this.currentOperand === '') {
-                    this.currentOperand = '0';
-                }
-                this.updateDisplay();
-            }
-            
-            appendNumber(number) {
-                if (number === '.' && this.currentOperand.includes('.')) return;
-                if (this.currentOperand === '0' && number !== '.') {
-                    this.currentOperand = number.toString();
-                } else {
-                    this.currentOperand = this.currentOperand.toString() + number.toString();
-                }
-                this.updateDisplay();
-            }
-            
-            chooseOperation(operation) {
-                if (this.currentOperand === '') return;
-                if (this.previousOperand !== '') {
-                    this.compute();
-                }
-                this.operation = operation;
-                this.previousOperand = this.currentOperand;
-                this.currentOperand = '';
-                this.updateDisplay();
-            }
-            
-            compute() {
-                let computation;
-                const prev = parseFloat(this.previousOperand);
-                const current = parseFloat(this.currentOperand);
-                if (isNaN(prev) || isNaN(current)) return;
-                
-                switch (this.operation) {
-                    case '+':
-                        computation = prev + current;
-                        break;
-                    case '-':
-                        computation = prev - current;
-                        break;
-                    case '×':
-                        computation = prev * current;
-                        break;
-                    case '÷':
-                        computation = prev / current;
-                        break;
-                    case '%':
-                        computation = prev % current;
-                        break;
-                    default:
-                        return;
-                }
-                
-                this.currentOperand = computation.toString();
-                this.operation = undefined;
-                this.previousOperand = '';
-                this.updateDisplay();
-            }
-            
-            toggleSign() {
-                if (this.currentOperand === '0') return;
-                this.currentOperand = (parseFloat(this.currentOperand) * -1).toString();
-                this.updateDisplay();
-            }
-            
-            getDisplayNumber(number) {
-                const stringNumber = number.toString();
-                const integerDigits = parseFloat(stringNumber.split('.')[0]);
-                const decimalDigits = stringNumber.split('.')[1];
-                let integerDisplay;
-                
-                if (isNaN(integerDigits)) {
-                    integerDisplay = '';
-                } else {
-                    integerDisplay = integerDigits.toLocaleString('nl', {
-                        maximumFractionDigits: 0
-                    });
-                }
-                
-                if (decimalDigits != null) {
-                    return `${integerDisplay}.${decimalDigits}`;
-                } else {
-                    return integerDisplay;
-                }
-            }
-            
-            updateDisplay() {
-                this.currentOperandElement.innerText = this.getDisplayNumber(this.currentOperand);
-                if (this.operation != null) {
-                    this.previousOperandElement.innerText = 
-                        `${this.getDisplayNumber(this.previousOperand)} ${this.operation}`;
-                } else {
-                    this.previousOperandElement.innerText = '';
-                }
-            }
+        // Operator (data-op)
+        if (btn.hasAttribute('data-op')) {
+          const op = btn.getAttribute('data-op');
+          let displayOp = op;
+          if (op === '/') displayOp = '÷';
+          if (op === '*') displayOp = '×';
+          appendToExpression(displayOp);
+          return;
         }
         
-        // Create ripple effect on button click
-        function createRipple(event) {
-            const button = event.currentTarget;
-            const circle = document.createElement('span');
-            const diameter = Math.max(button.clientWidth, button.clientHeight);
-            const radius = diameter / 2;
-            
-            circle.style.width = circle.style.height = `${diameter}px`;
-            circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
-            circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
-            circle.classList.add('ripple');
-            
-            const ripple = button.getElementsByClassName('ripple')[0];
-            if (ripple) {
-                ripple.remove();
-            }
-            
-            button.appendChild(circle);
+        // Nummer of punt (data-num)
+        if (btn.hasAttribute('data-num')) {
+          const num = btn.getAttribute('data-num');
+          appendToExpression(num);
+          return;
         }
-        
-        // Elementen selecteren
-        const previousOperandElement = document.querySelector('.previous-operand');
-        const currentOperandElement = document.querySelector('.current-operand');
-        const numberButtons = document.querySelectorAll('.number');
-        const operatorButtons = document.querySelectorAll('.operator');
-        const equalsButton = document.querySelector('.equals');
-        const clearButton = document.querySelector('.clear');
-        const allButtons = document.querySelectorAll('button');
-        
-        // Calculator initialiseren
-        const calculator = new Calculator(previousOperandElement, currentOperandElement);
-        
-        // Add ripple effect to all buttons
-        allButtons.forEach(button => {
-            button.addEventListener('click', createRipple);
-        });
-        
-        // Event listeners toevoegen
-        numberButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                calculator.appendNumber(button.innerText);
-            });
-        });
-        
-        operatorButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                if (button.innerText === '±') {
-                    calculator.toggleSign();
-                } else {
-                    calculator.chooseOperation(button.innerText);
-                }
-            });
-        });
-        
-        equalsButton.addEventListener('click', () => {
-            calculator.compute();
-        });
-        
-        clearButton.addEventListener('click', () => {
-            calculator.clear();
-        });
-        
-        // Toetsenbord ondersteuning
-        document.addEventListener('keydown', (event) => {
-            if (/[0-9]/.test(event.key)) {
-                calculator.appendNumber(event.key);
-            } else if (event.key === '.') {
-                calculator.appendNumber('.');
-            } else if (event.key === '+' || event.key === '-' || event.key === '*' || event.key === '/') {
-                let operation;
-                if (event.key === '*') operation = '×';
-                else if (event.key === '/') operation = '÷';
-                else operation = event.key;
-                calculator.chooseOperation(operation);
-            } else if (event.key === 'Enter' || event.key === '=') {
-                calculator.compute();
-            } else if (event.key === 'Escape' || event.key === 'Delete') {
-                calculator.clear();
-            } else if (event.key === 'Backspace') {
-                calculator.delete();
-            }
-        });
-    </script>
+      });
+    }
+    
+    // Toetsenbordondersteuning (extra handig)
+    window.addEventListener('keydown', (e) => {
+      const key = e.key;
+      // Cijfers en punt
+      if (/[\d\.]/.test(key)) {
+        e.preventDefault();
+        appendToExpression(key);
+      } 
+      else if (key === '+' || key === '-' || key === '*' || key === '/' || key === '%' || key === '(' || key === ')') {
+        e.preventDefault();
+        let mapped = key;
+        if (key === '*') mapped = '×';
+        if (key === '/') mapped = '÷';
+        appendToExpression(mapped);
+      }
+      else if (key === '^') {
+        e.preventDefault();
+        appendToExpression('^');
+      }
+      else if (key === 'Enter' || key === '=') {
+        e.preventDefault();
+        computeResult();
+      }
+      else if (key === 'Escape' || key === 'c' || key === 'C') {
+        e.preventDefault();
+        clearAll();
+      }
+      else if (key === 'Backspace') {
+        e.preventDefault();
+        deleteLast();
+      }
+    });
+    
+    // Initialisatie: toon '0'
+    updateDisplay();
+  })();
+</script>
 </body>
 </html>
