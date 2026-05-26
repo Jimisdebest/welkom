@@ -1,219 +1,646 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
-  <meta charset="UTF-8" />
-  <title>Halloween Zombie Game - BBA</title>
-  <style>
-    body { margin: 0; overflow: hidden; font-family: sans-serif; }
-    canvas { display: block; }
-
-    #overlay, #gameover {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.85);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-    }
-
-    #healthbar {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      width: 200px;
-      height: 20px;
-      background: red;
-      border: 2px solid #000;
-      z-index: 5;
-    }
-
-    #health {
-      height: 100%;
-      background: limegreen;
-      width: 100%;
-    }
-
-    button {
-      padding: 10px 20px;
-      font-size: 18px;
-      cursor: pointer;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oneindige Platform Racer 3D</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+        #gameCanvas {
+            display: block;
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+        #score {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #FFD700;
+            font-size: 32px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 16px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+            text-align: center;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+            display: none;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-<div id="overlay">
-  <h1>Halloween Zombie Game</h1>
-  <button onclick="startGame()">Start Game</button>
-</div>
+    <div id="ui">Levens: <span id="lives">3</span></div>
+    <div id="score">Score: <span id="scoreValue">0</span></div>
+    <div id="instructions">
+        🎮 Pijltjestoetsen of WASD om te bewegen<br>
+        ⬆️/W = Vooruit | ⬇️/S = Remmen<br>
+        ⬅️/A = Links | ➡️/D = Rechts<br>
+        🏃‍♂️ Spring van platform naar platform!
+    </div>
+    <div id="gameOver">
+        Game Over!<br>
+        <span style="font-size: 24px;">Druk op SPATIE om opnieuw te starten</span>
+    </div>
 
-<div id="gameover" style="display:none;">
-  <h1>Game Over</h1>
-  <button onclick="restartGame()">Respawn</button>
-</div>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.157.0/build/three.module.js"
+            }
+        }
+    </script>
 
-<div id="healthbar"><div id="health"></div></div>
+    <script type="module">
+        import * as THREE from 'three';
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
-<script>
-let scene, camera, renderer, player, zombies = [], health = 100;
-let keys = {}, raycaster, mouse = new THREE.Vector2();
-let gameRunning = false;
+        // ============ SPEL SETUP ============
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e);
+        scene.fog = new THREE.Fog(0x1a1a2e, 30, 100);
 
-function startGame() {
-  document.getElementById('overlay').style.display = 'none';
-  gameRunning = true;
-  init();
-  animate();
-  setInterval(spawnZombie, 3000);
-}
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 15, 15);
+        camera.lookAt(0, 0, 20);
 
-function restartGame() {
-  location.reload();
-}
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
 
-function init() {
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-  renderer = new THREE.WebGLRenderer();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
+        // ============ VERLICHTING ============
+        const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
+        scene.add(ambientLight);
 
-  const light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(10, 20, 10);
-  scene.add(light);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(10, 20, 0);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.camera.left = -50;
+        directionalLight.shadow.camera.right = 50;
+        directionalLight.shadow.camera.top = 50;
+        directionalLight.shadow.camera.bottom = -50;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        scene.add(directionalLight);
 
-  // Vloertegels
-  for (let x = -20; x <= 20; x += 2) {
-    for (let z = -20; z <= 20; z += 2) {
-      const tile = new THREE.Mesh(
-        new THREE.BoxGeometry(2, 0.1, 2),
-        new THREE.MeshStandardMaterial({ color: (x + z) % 4 === 0 ? 0x888888 : 0x555555 })
-      );
-      tile.position.set(x, 0, z);
-      scene.add(tile);
-    }
-  }
+        // Hemel kleur effect
+        const hemiLight = new THREE.HemisphereLight(0x87CEEB, 0x362907, 0.3);
+        scene.add(hemiLight);
 
-  // Muren
-  const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x3333aa });
-  for (let i = -20; i <= 20; i += 2) {
-    const wall1 = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 0.5), wallMaterial);
-    wall1.position.set(i, 1, -21);
-    scene.add(wall1);
-    const wall2 = wall1.clone(); wall2.position.z = 21; scene.add(wall2);
-    const wall3 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2, 2), wallMaterial);
-    wall3.position.set(-21, 1, i); scene.add(wall3);
-    const wall4 = wall3.clone(); wall4.position.x = 21; scene.add(wall4);
-  }
+        // ============ SPELER ============
+        const playerGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const playerMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x00ff88,
+            metalness: 0.3,
+            roughness: 0.4,
+            emissive: 0x003322,
+            emissiveIntensity: 0.5
+        });
+        const player = new THREE.Mesh(playerGeometry, playerMaterial);
+        player.castShadow = true;
+        player.receiveShadow = true;
+        player.position.set(0, 1.5, 0);
+        scene.add(player);
 
-  // Pompoenen (platte oranje cilinders)
-  for (let i = 0; i < 10; i++) {
-    const pumpkin = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.6, 0.6, 0.3, 16),
-      new THREE.MeshStandardMaterial({ color: 0xffa500 })
-    );
-    pumpkin.position.set(Math.random() * 30 - 15, 0.15, Math.random() * 30 - 15);
-    scene.add(pumpkin);
-  }
+        // Speler ogen
+        const eyeGeometry = new THREE.SphereGeometry(0.15, 8, 8);
+        const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1 });
+        const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+        leftEye.position.set(-0.3, 0.2, 0.5);
+        player.add(leftEye);
+        
+        const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+        rightEye.position.set(0.3, 0.2, 0.5);
+        player.add(rightEye);
 
-  // Speler
-  player = new THREE.Mesh(
-    new THREE.BoxGeometry(1, 1, 1),
-    new THREE.MeshStandardMaterial({ color: 0x00ff00 })
-  );
-  player.position.y = 0.5;
-  scene.add(player);
+        const pupilGeometry = new THREE.SphereGeometry(0.08, 8, 8);
+        const pupilMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+        const leftPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+        leftPupil.position.set(-0.3, 0.2, 0.62);
+        player.add(leftPupil);
+        
+        const rightPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+        rightPupil.position.set(0.3, 0.2, 0.62);
+        player.add(rightPupil);
 
-  camera.position.set(0, 5, 10);
-  camera.lookAt(player.position);
+        // ============ GAME STATE ============
+        let playerSpeed = 0.3;
+        let maxSpeed = 0.8;
+        let acceleration = 0.02;
+        let deceleration = 0.01;
+        let lateralSpeed = 0;
+        let maxLateralSpeed = 0.4;
+        let lateralAcceleration = 0.03;
+        let lateralFriction = 0.9;
+        let score = 0;
+        let lives = 3;
+        let gameRunning = true;
+        let platforms = [];
+        let obstacles = [];
+        let coins = [];
+        let particles = [];
+        const platformSpeed = 0.3;
+        let forwardVelocity = 0;
+        let targetForwardVelocity = 0;
 
-  raycaster = new THREE.Raycaster();
+        // Camera offset
+        const cameraOffset = new THREE.Vector3(0, 8, -8);
 
-  document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-  document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-  document.addEventListener('click', onClick);
-}
+        // ============ INPUT HANDLING ============
+        const keys = {
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false,
+            w: false,
+            s: false,
+            a: false,
+            d: false,
+            ' ': false
+        };
 
-function spawnZombie() {
-  if (!gameRunning) return;
-  const zombie = new THREE.Mesh(
-    new THREE.BoxGeometry(1, 1, 1),
-    new THREE.MeshStandardMaterial({ color: 0xff0000 })
-  );
-  zombie.position.set(Math.random() * 30 - 15, 0.5, Math.random() * 30 - 15);
-  scene.add(zombie);
-  zombies.push(zombie);
-}
+        window.addEventListener('keydown', (e) => {
+            if (keys.hasOwnProperty(e.key)) {
+                keys[e.key] = true;
+                e.preventDefault();
+            }
+            if (e.key === ' ' && !gameRunning) {
+                restartGame();
+                e.preventDefault();
+            }
+        });
 
-function onClick(event) {
-  if (!gameRunning) return;
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(zombies);
-  if (intersects.length > 0) {
-    const zombie = intersects[0].object;
-    scene.remove(zombie);
-    zombies = zombies.filter(z => z !== zombie);
-  }
-}
+        window.addEventListener('keyup', (e) => {
+            if (keys.hasOwnProperty(e.key)) {
+                keys[e.key] = false;
+                e.preventDefault();
+            }
+        });
 
-function movePlayer() {
-  const speed = 0.2;
-  if (keys['w'] || keys['arrowup']) player.position.z -= speed;
-  if (keys['s'] || keys['arrowdown']) player.position.z += speed;
-  if (keys['a'] || keys['arrowleft']) player.position.x -= speed;
-  if (keys['d'] || keys['arrowright']) player.position.x += speed;
-}
+        // ============ PLATFORM GENERATIE ============
+        function createPlatform(x, y, z, width = 4, depth = 8) {
+            const geometry = new THREE.BoxGeometry(width, 0.5, depth);
+            const colors = [0x4a90e2, 0x50e3c2, 0xf5a623, 0xd0021b, 0x8b572a];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const material = new THREE.MeshStandardMaterial({ 
+                color: color,
+                metalness: 0.5,
+                roughness: 0.5
+            });
+            const platform = new THREE.Mesh(geometry, material);
+            platform.position.set(x, y, z);
+            platform.castShadow = true;
+            platform.receiveShadow = true;
+            
+            // Voeg randen toe
+            const edgeGeometry = new THREE.BoxGeometry(width + 0.1, 0.05, depth + 0.1);
+            const edgeMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xffffff,
+                emissive: color,
+                emissiveIntensity: 0.3,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+            const edge = new THREE.Mesh(edgeGeometry, edgeMaterial);
+            edge.position.y = 0.25;
+            platform.add(edge);
+            
+            scene.add(platform);
+            return platform;
+        }
 
-function checkCollision(zombie) {
-  const dx = player.position.x - zombie.position.x;
-  const dz = player.position.z - zombie.position.z;
-  return Math.sqrt(dx * dx + dz * dz) < 1;
-}
+        function createObstacle(x, y, z) {
+            const types = ['cube', 'sphere', 'pyramid'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            let geometry;
+            
+            switch(type) {
+                case 'sphere':
+                    geometry = new THREE.SphereGeometry(0.6, 8, 8);
+                    break;
+                case 'pyramid':
+                    geometry = new THREE.ConeGeometry(0.6, 1.2, 4);
+                    break;
+                default:
+                    geometry = new THREE.BoxGeometry(1, 1, 1);
+            }
+            
+            const material = new THREE.MeshStandardMaterial({ 
+                color: 0xff4444,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0x440000,
+                emissiveIntensity: 0.5
+            });
+            const obstacle = new THREE.Mesh(geometry, material);
+            obstacle.position.set(x, y, z);
+            obstacle.castShadow = true;
+            obstacle.receiveShadow = true;
+            
+            // Draai-effect
+            obstacle.userData = {
+                rotationSpeed: Math.random() * 0.05 + 0.02,
+                floatOffset: Math.random() * Math.PI * 2
+            };
+            
+            scene.add(obstacle);
+            return obstacle;
+        }
 
-function updateHealthBar() {
-  document.getElementById('health').style.width = health + '%';
-}
+        function createCoin(x, y, z) {
+            const group = new THREE.Group();
+            
+            const coinGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.1, 16);
+            const coinMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFFD700,
+                metalness: 0.9,
+                roughness: 0.1,
+                emissive: 0x664400,
+                emissiveIntensity: 0.8
+            });
+            const coin = new THREE.Mesh(coinGeometry, coinMaterial);
+            coin.rotation.x = Math.PI / 2;
+            group.add(coin);
+            
+            // Glow effect
+            const glowGeometry = new THREE.TorusGeometry(0.4, 0.05, 8, 16);
+            const glowMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFFFF00,
+                emissive: 0xFFFF00,
+                emissiveIntensity: 1,
+                transparent: true,
+                opacity: 0.5
+            });
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            glow.rotation.x = Math.PI / 2;
+            group.add(glow);
+            
+            group.position.set(x, y, z);
+            group.castShadow = true;
+            group.userData = {
+                rotationSpeed: 0.05
+            };
+            
+            scene.add(group);
+            return group;
+        }
 
-function animate() {
-  requestAnimationFrame(animate);
-  if (!gameRunning) return;
+        function createParticle(x, y, z, color) {
+            const geometry = new THREE.SphereGeometry(0.1, 4, 4);
+            const material = new THREE.MeshBasicMaterial({ color: color });
+            const particle = new THREE.Mesh(geometry, material);
+            particle.position.set(x, y, z);
+            particle.userData = {
+                velocity: new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.2,
+                    Math.random() * 0.3 + 0.1,
+                    (Math.random() - 0.5) * 0.2
+                ),
+                life: 1.0
+            };
+            scene.add(particle);
+            return particle;
+        }
 
-  movePlayer();
+        function generateInitialPlatforms() {
+            // Start platform
+            platforms.push(createPlatform(0, 0, 0, 5, 10));
+            
+            // Genereer eerste platforms
+            for (let i = 0; i < 15; i++) {
+                generateNextPlatform();
+            }
+        }
 
-  // Buiten de map = Game Over
-  if (Math.abs(player.position.x) > 20 || Math.abs(player.position.z) > 20) {
-    gameRunning = false;
-    document.getElementById('gameover').style.display = 'flex';
-    return;
-  }
+        function generateNextPlatform() {
+            if (platforms.length === 0) return;
+            
+            const lastPlatform = platforms[platforms.length - 1];
+            const lastPos = lastPlatform.position;
+            
+            // Willekeurige offset voor volgende platform
+            const xOffset = (Math.random() - 0.5) * 6;
+            const zOffset = 6 + Math.random() * 4;
+            
+            const newX = THREE.MathUtils.clamp(lastPos.x + xOffset, -10, 10);
+            const newZ = lastPos.z + zOffset;
+            
+            // Soms een platform op andere hoogte
+            const yOffset = Math.random() < 0.3 ? (Math.random() - 0.5) * 2 : 0;
+            const newY = lastPos.y + yOffset;
+            
+            const width = 3 + Math.random() * 4;
+            const depth = 4 + Math.random() * 6;
+            
+            const platform = createPlatform(newX, newY, newZ, width, depth);
+            platforms.push(platform);
+            
+            // Voeg obstacle toe (30% kans)
+            if (Math.random() < 0.3) {
+                const obstacleX = newX + (Math.random() - 0.5) * (width - 1);
+                const obstacleZ = newZ + (Math.random() - 0.5) * (depth - 1);
+                obstacles.push(createObstacle(obstacleX, newY + 0.75, obstacleZ));
+            }
+            
+            // Voeg coins toe
+            const numCoins = Math.floor(Math.random() * 4);
+            for (let i = 0; i < numCoins; i++) {
+                const coinX = newX + (Math.random() - 0.5) * (width - 0.5);
+                const coinZ = newZ + (Math.random() - 0.5) * (depth - 0.5);
+                coins.push(createCoin(coinX, newY + 1.5, coinZ));
+            }
+        }
 
-  zombies.forEach((zombie, index) => {
-    const dir = new THREE.Vector3().subVectors(player.position, zombie.position).normalize();
-    zombie.position.addScaledVector(dir, 0.02);
+        function cleanupObjects() {
+            // Verwijder platforms die te ver achter zijn
+            while (platforms.length > 0 && platforms[0].position.z < player.position.z - 30) {
+                const platform = platforms.shift();
+                scene.remove(platform);
+            }
+            
+            // Verwijder obstacles die te ver achter zijn
+            obstacles = obstacles.filter(obstacle => {
+                if (obstacle.position.z < player.position.z - 30) {
+                    scene.remove(obstacle);
+                    return false;
+                }
+                return true;
+            });
+            
+            // Verwijder coins die te ver achter zijn
+            coins = coins.filter(coin => {
+                if (coin.position.z < player.position.z - 30) {
+                    scene.remove(coin);
+                    return false;
+                }
+                return true;
+            });
+            
+            // Update particles
+            particles = particles.filter(particle => {
+                particle.userData.life -= 0.02;
+                if (particle.userData.life <= 0) {
+                    scene.remove(particle);
+                    return false;
+                }
+                particle.position.add(particle.userData.velocity);
+                particle.material.opacity = particle.userData.life;
+                return true;
+            });
+            
+            // Genereer nieuwe platforms als nodig
+            const lastPlatform = platforms[platforms.length - 1];
+            if (lastPlatform && lastPlatform.position.z < player.position.z + 50) {
+                generateNextPlatform();
+            }
+        }
 
-    if (checkCollision(zombie)) {
-      health -= 0.2;
-      updateHealthBar();
-      if (health <= 0) {
-        gameRunning = false;
-        document.getElementById('gameover').style.display = 'flex';
-      }
-    }
-  });
+        // ============ COLLISION DETECTION ============
+        function checkCollision(obj1, obj2, threshold = 1.5) {
+            const dx = obj1.position.x - obj2.position.x;
+            const dy = obj1.position.y - obj2.position.y;
+            const dz = obj1.position.z - obj2.position.z;
+            const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            return distance < threshold;
+        }
 
-  camera.position.x = player.position.x;
-  camera.position.z = player.position.z + 10;
-  camera.lookAt(player.position);
+        function checkPlatformCollision() {
+            let onPlatform = false;
+            
+            for (const platform of platforms) {
+                const platPos = platform.position;
+                const platWidth = platform.geometry.parameters.width;
+                const platDepth = platform.geometry.parameters.depth;
+                
+                if (Math.abs(player.position.x - platPos.x) < platWidth / 2 &&
+                    Math.abs(player.position.z - platPos.z) < platDepth / 2 &&
+                    player.position.y <= platPos.y + 0.5 &&
+                    player.position.y >= platPos.y - 0.5) {
+                    
+                    player.position.y = platPos.y + 0.5;
+                    onPlatform = true;
+                    break;
+                }
+            }
+            
+            return onPlatform;
+        }
 
-  renderer.render(scene, camera);
-}
-</script>
+        function spawnParticles(position, color, count = 20) {
+            for (let i = 0; i < count; i++) {
+                particles.push(createParticle(position.x, position.y, position.z, color));
+            }
+        }
+
+        function handleCollisions() {
+            // Check obstacle collisions
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obstacle = obstacles[i];
+                if (checkCollision(player, obstacle, 1.2)) {
+                    lives--;
+                    document.getElementById('lives').textContent = lives;
+                    spawnParticles(obstacle.position, 0xff4444);
+                    scene.remove(obstacle);
+                    obstacles.splice(i, 1);
+                    
+                    // Tijdelijke onkwetsbaarheid
+                    player.material.emissive.set(0xff0000);
+                    setTimeout(() => {
+                        player.material.emissive.set(0x003322);
+                    }, 500);
+                    
+                    if (lives <= 0) {
+                        gameOver();
+                    }
+                }
+            }
+            
+            // Check coin collisions
+            for (let i = coins.length - 1; i >= 0; i--) {
+                const coin = coins[i];
+                if (checkCollision(player, coin, 1.5)) {
+                    score += 100;
+                    document.getElementById('scoreValue').textContent = score;
+                    spawnParticles(coin.position, 0xFFD700, 10);
+                    scene.remove(coin);
+                    coins.splice(i, 1);
+                }
+            }
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('gameOver').style.display = 'block';
+            spawnParticles(player.position, 0xff0000, 50);
+        }
+
+        function restartGame() {
+            // Verwijder alle objecten
+            platforms.forEach(p => scene.remove(p));
+            obstacles.forEach(o => scene.remove(o));
+            coins.forEach(c => scene.remove(c));
+            particles.forEach(p => scene.remove(p));
+            
+            platforms = [];
+            obstacles = [];
+            coins = [];
+            particles = [];
+            
+            // Reset speler
+            player.position.set(0, 1.5, 0);
+            player.rotation.set(0, 0, 0);
+            player.material.emissive.set(0x003322);
+            
+            // Reset game state
+            score = 0;
+            lives = 3;
+            forwardVelocity = 0;
+            gameRunning = true;
+            
+            document.getElementById('scoreValue').textContent = score;
+            document.getElementById('lives').textContent = lives;
+            document.getElementById('gameOver').style.display = 'none';
+            
+            // Genereer nieuwe platforms
+            generateInitialPlatforms();
+        }
+
+        // ============ GAME LOOP ============
+        function update() {
+            if (!gameRunning) return;
+            
+            // Input verwerking
+            if (keys.ArrowUp || keys.w) {
+                targetForwardVelocity = maxSpeed;
+            } else if (keys.ArrowDown || keys.s) {
+                targetForwardVelocity = -maxSpeed / 2;
+            } else {
+                targetForwardVelocity = playerSpeed;
+            }
+            
+            if (keys.ArrowLeft || keys.a) {
+                lateralSpeed = Math.min(lateralSpeed + lateralAcceleration, maxLateralSpeed);
+            } else if (keys.ArrowRight || keys.d) {
+                lateralSpeed = Math.max(lateralSpeed - lateralAcceleration, -maxLateralSpeed);
+            } else {
+                lateralSpeed *= lateralFriction;
+            }
+            
+            // Smooth forward velocity
+            forwardVelocity += (targetForwardVelocity - forwardVelocity) * 0.05;
+            
+            // Update speler positie
+            player.position.x += lateralSpeed;
+            player.position.z += forwardVelocity;
+            player.position.y -= 0.2; // Zwaartekracht
+            
+            // Houd speler binnen grenzen
+            player.position.x = THREE.MathUtils.clamp(player.position.x, -15, 15);
+            
+            // Check platform collisions
+            const onPlatform = checkPlatformCollision();
+            
+            // Als speler valt
+            if (player.position.y < -10) {
+                lives--;
+                document.getElementById('lives').textContent = lives;
+                
+                if (lives <= 0) {
+                    gameOver();
+                } else {
+                    // Reset naar laatste platform
+                    const lastPlatform = platforms[platforms.length - 1];
+                    if (lastPlatform) {
+                        player.position.set(lastPlatform.position.x, lastPlatform.position.y + 2, lastPlatform.position.z);
+                    } else {
+                        player.position.set(0, 1.5, 0);
+                    }
+                }
+            }
+            
+            // Update score gebaseerd op afstand
+            score += Math.floor(forwardVelocity * 10);
+            document.getElementById('scoreValue').textContent = score;
+            
+            // Obstacle animatie
+            obstacles.forEach(obstacle => {
+                obstacle.rotation.y += obstacle.userData.rotationSpeed;
+                obstacle.rotation.x += obstacle.userData.rotationSpeed * 0.5;
+                obstacle.position.y += Math.sin(Date.now() * 0.003 + obstacle.userData.floatOffset) * 0.01;
+            });
+            
+            // Coin animatie
+            coins.forEach(coin => {
+                coin.rotation.z += coin.userData.rotationSpeed;
+                coin.position.y += Math.sin(Date.now() * 0.005) * 0.02;
+            });
+            
+            // Collision detection
+            handleCollisions();
+            
+            // Cleanup en generatie
+            cleanupObjects();
+            
+            // Update camera
+            const targetCameraPos = player.position.clone().add(cameraOffset);
+            camera.position.lerp(targetCameraPos, 0.1);
+            camera.lookAt(player.position.x, player.position.y + 1, player.position.z + 10);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            update();
+            renderer.render(scene, camera);
+        }
+
+        // ============ START GAME ============
+        generateInitialPlatforms();
+        animate();
+
+        // Window resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        console.log('🏎️ Oneindige Platform Racer gestart!');
+        console.log('Gebruik pijltjestoetsen of WASD om te bewegen');
+        console.log('Verzamel gouden munten en vermijd obstakels!');
+    </script>
 </body>
 </html>
-
